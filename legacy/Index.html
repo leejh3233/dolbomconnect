@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>돌봄매트 견적 문의 | 프리미엄 층간소음 솔루션</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f8f9fa;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
+
+        /* 추가: 모바일 확대 방지 */
+        .premium-shadow {
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-blue-50 to-gray-100 min-h-[100dvh] flex items-center justify-center p-4">
+
+    <div class="card w-full max-w-md bg-white rounded-3xl premium-shadow overflow-hidden relative border border-white">
+        <!-- Top Banner -->
+        <div class="bg-blue-600 px-6 py-4 text-white text-center">
+            <div
+                class="inline-block bg-blue-500 bg-opacity-30 rounded-full px-3 py-1 text-xs font-semibold mb-1 tracking-wide">
+                ✨ 프리미엄 층간소음 매트
+            </div>
+            <h2 class="text-xl font-bold tracking-tight">돌봄매트 간편 견적</h2>
+        </div>
+
+        <div class="p-8">
+            <div class="text-center mb-8">
+                <p class="text-gray-600 text-sm leading-relaxed">
+                    아래 내용을 입력하시면 상담 정보가 복사되어<br>
+                    <b class="text-blue-600">카카오톡 전문 상담</b>으로 즉시 연결됩니다.
+                </p>
+
+                <!-- Benefit Badge (V12.4 Conditional) -->
+                <? if (empId !== "본사") { ?>
+                <div class="mt-4 inline-flex items-center gap-2 bg-blue-50 border border-blue-100 px-4 py-2 rounded-lg">
+                    <span class="flex h-2 w-2 relative">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                    </span>
+                    <span class="text-xs font-bold text-blue-700">시크릿 혜택 적용중</span>
+                </div>
+                <? } else { ?>
+                <div
+                    class="mt-4 inline-flex items-center gap-2 bg-slate-50 border border-slate-100 px-4 py-2 rounded-lg">
+                    <span class="text-xs font-bold text-slate-400">일반 혜택 적용중</span>
+                </div>
+                <? } ?>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">지역</label>
+                    <input type="text" id="area" placeholder="예: 서울, 부산"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">아파트명</label>
+                    <input type="text" id="aptName" placeholder="예: 롯데캐슬"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">평수</label>
+                    <input type="text" id="pyeong" placeholder="예: 34평"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">시공 희망 범위</label>
+                    <input type="text" id="scope" placeholder="예: 거실+복도"
+                        class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">추천인 (할인 혜택 포함)</label>
+                    <div class="relative">
+                        <input type="text" id="empId" value="<?= empId ?>" readonly
+                            class="w-full px-4 py-3 bg-blue-50 border border-blue-100 text-blue-800 font-bold rounded-xl focus:outline-none pointer-events-none text-sm">
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button id="btnSubmit" onclick="submitForm()"
+                class="w-full mt-8 bg-[#FEE500] hover:bg-[#FDD835] text-[#191919] font-bold py-4 rounded-xl shadow-sm transition-all transform active:scale-95 flex items-center justify-center gap-2 text-[16px]">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12 2C6.48 2 2 5.92 2 10.75c0 2.8 1.5 5.25 3.84 6.83-.16.6-.58 2.17-.66 2.5-.1.35.13.35.27.25.11-.08 1.57-1.07 2.18-1.5 1.55.45 3.2.7 4.9.7 5.52 0 10-3.92 10-8.75S15.52 2 12 2z" />
+                </svg>
+                카톡 채널 상담 바로가기
+            </button>
+
+            <p class="text-[11px] text-gray-400 text-center mt-4">
+                *지금 링크로 연결시 추천인 혜택이 자동 적용됩니다.
+            </p>
+        </div>
+    </div>
+
+    <!-- Hidden Params & Script -->
+    <script>
+        // [Local Testing Mock]
+        if (typeof google === 'undefined') {
+            window.google = {
+                script: {
+                    run: {
+                        withSuccessHandler: function (cb) {
+                            return {
+                                saveData: function (data) {
+                                    console.log("Mock saveData called:", data);
+                                    setTimeout(cb, 1000, "Success");
+                                }
+                            };
+                        }
+                    }
+                }
+            };
+        }
+
+        function submitForm() {
+            var area = document.getElementById('area').value;
+            var aptName = document.getElementById('aptName').value;
+            var pyeong = document.getElementById('pyeong').value;
+            var scope = document.getElementById('scope').value;
+            var empId = document.getElementById('empId').value;
+            var source = "<?= source ?>";
+
+            if (!area || !aptName || !pyeong || !scope) {
+                alert("모든 항목을 입력해주세요! 😊");
+                return;
+            }
+
+            // [사용자 요청 복사 문구: 상담 정보 줄바꿈 버전]
+            var copyText = "🏠 돌봄매트 견적 문의 (추천인 혜택 적용)\n\n" +
+                "📍 상담 정보\n" +
+                "- 지역: " + area + "\n" +
+                "- 아파트명: " + aptName + "\n" +
+                "- 평수: " + pyeong + "\n" +
+                "- 시공범위: " + scope + "\n" +
+                "- 추천인: " + empId + "\n\n" +
+                "🎁 확보하신 추천인 혜택\n" +
+                "✅ 공구가 자동 적용: 장당 15,500원\n" +
+                "✅ 전문 시공비 혜택: 300,000원 상당(100장이상)\n" +
+                "✅ 시크릿 쿠폰팩 증정: 80,000원 (웰컴3만+추천인5만(지인쿠폰중복X))\n\n" +
+                "━━━━━━━━━━━━━━━━\n\n" +
+                "위 혜택으로 상담 부탁드립니다!";
+
+            // 1. 클립보드 복사
+            navigator.clipboard.writeText(copyText);
+            alert("🎉 상담내용이 복사되었습니다!\n카톡창에 '붙여넣기' 하시면 시크릿혜택 8만원이 적용됩니다.");
+
+            // 2. 버튼 상태 변경 및 수동 연결 링크 활성화
+            var btn = document.getElementById('btnSubmit');
+            var kakaoUrl = "https://pf.kakao.com/_UMyBK/chat";
+
+            btn.innerHTML = `
+            <svg class="w-5 h-5 animate-spin mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            연결 중... (안될 시 클릭)
+        `;
+            btn.disabled = false;
+            btn.onclick = function () { window.top.location.href = kakaoUrl; };
+
+            var data = {
+                area: area,
+                aptName: aptName,
+                pyeong: pyeong,
+                scope: scope,
+                empId: empId,
+                source: source
+            };
+
+            // 3. 서버 저장 후 카톡 이동 시도
+            google.script.run.withSuccessHandler(function () {
+                window.top.location.href = kakaoUrl;
+            }).saveData(data);
+        }
+    </script>
+</body>
+
+</html>

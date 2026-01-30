@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>파트너 센터 | 돌봄매트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #f1f5f9;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
+
+        /* 모바일에서 인풋 클릭 시 자동 확대 방지 */
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .touch-target {
+            min-height: 48px;
+            border-radius: 1rem;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-[100dvh] pb-12 select-none">
+
+    <!-- 상단 헤더 -->
+    <header class="bg-slate-900 text-white py-6 px-6 shadow-2xl sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-lg font-black tracking-tighter">돌봄 파트너 센터</h1>
+                    <p id="userNameDisplay" class="text-[9px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">
+                        Partner Dashboard</p>
+                </div>
+                <!-- [NEW] 개인정보관리 버튼 -->
+                <button id="btnProfile" onclick="openProfileModal()"
+                    class="hidden bg-slate-800 text-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-bold border border-slate-700 hover:text-white transition-colors">개인정보관리</button>
+            </div>
+            <!-- 나가기 버튼 수리: scriptUrl 사용 -->
+            <button onclick="window.top.location.href='<?= scriptUrl ?>?page=portal'"
+                class="bg-slate-800 px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-slate-700 active:scale-95 transition-transform">나가기</button>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto p-4 md:p-8 space-y-6">
+
+        <section id="loginSection"
+            class="max-w-sm mx-auto bg-white rounded-[2.5rem] shadow-xl p-6 md:p-10 border border-white mt-10">
+            <h2 class="text-xl font-black text-slate-800 mb-6 text-center">파트너 본인 확인</h2>
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">성함</label>
+                    <div class="flex flex-wrap sm:flex-nowrap gap-2">
+                        <input type="text" id="partnerName" placeholder="성함 입력"
+                            class="flex-1 min-w-[120px] px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-sm">
+                        <button onclick="checkName()" id="btnCheck"
+                            class="whitespace-nowrap bg-slate-900 text-white px-5 py-3 rounded-xl font-black text-xs active:scale-95">확인</button>
+                    </div>
+                </div>
+                <div id="pwdArea" class="hidden slide-up space-y-5">
+                    <p id="statusMsg"
+                        class="text-[10px] font-bold text-blue-600 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                    </p>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1">비밀번호
+                            (4자리)</label>
+                        <input type="password" id="partnerPwd" maxlength="4" placeholder="••••"
+                            class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-xl outline-none font-black text-center tracking-[1rem] text-xl">
+                    </div>
+                    <!-- [V13.0] 직원은 계좌 필드 숨김 -->
+                    <div id="regFields" class="hidden space-y-3">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase ml-1">계좌 정보 (정산용)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="bank" placeholder="은행명"
+                                class="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold">
+                            <input type="text" id="account" placeholder="계좌번호"
+                                class="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold">
+                        </div>
+                    </div>
+                    <button onclick="login()" id="btnLogin"
+                        class="w-full bg-blue-600 text-white py-4 rounded-xl font-black shadow-lg hover:bg-blue-700 active:scale-95 transition-all">대시보드
+                        접속</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2단계: 메인 대시보드 -->
+        <section id="dashboard" class="hidden animate-in fade-in duration-500 space-y-6">
+
+            <!-- 홍보 링크 관리 섹션 -->
+            <div class="bg-white rounded-[2rem] p-8 border border-white shadow-xl space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h3 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-1">나의 홍보 링크 발급</h3>
+                        <p class="text-xs text-slate-500 font-medium">홍보할 채널을 선택하세요. (동일 채널은 기존 링크가 유지됩니다)</p>
+                    </div>
+                    <div class="flex w-full md:w-auto gap-2">
+                        <select id="media"
+                            class="flex-1 md:w-44 px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-xs">
+                            <option value="">-- 매체 선택 --</option>
+                            <option value="인스타그램">인스타그램</option>
+                            <option value="블로그">블로그</option>
+                            <option value="당근마켓">당근마켓</option>
+                            <option value="카페/커뮤니티">카페/커뮤니티</option>
+                            <option value="지인소개">지인소개/직접</option>
+                        </select>
+                        <button onclick="createNewLink()"
+                            class="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm active:scale-95">링크
+                            생성</button>
+                    </div>
+                </div>
+
+                <!-- 링크 목록 -->
+                <div class="pt-4 border-t border-slate-50">
+                    <h4 class="text-[9px] font-black text-slate-300 uppercase mb-3 tracking-widest">발급된 고유 링크 내역</h4>
+                    <div id="myLinksContainer" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- 정산 통계 요약 (V13.2 누적 통계 추가) -->
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div class="bg-white p-5 rounded-2xl border border-white shadow-xl text-center">
+                    <div class="text-[9px] font-black text-slate-400 uppercase mb-1">총 누적 정산완료</div>
+                    <div id="stat_totalSettled" class="text-xl font-black text-slate-900">-</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-white shadow-xl text-center">
+                    <div class="text-[9px] font-black text-slate-400 uppercase mb-1">총 미정산 잔액</div>
+                    <div id="stat_totalPending" class="text-xl font-black text-red-500">-</div>
+                </div>
+                <div class="bg-slate-900 p-5 rounded-2xl shadow-xl text-center text-white col-span-2 md:col-span-1">
+                    <div class="text-[9px] font-black text-slate-500 uppercase mb-1">성적표 합계</div>
+                    <div id="stat_monthSettled" class="text-lg font-black text-blue-400">-</div>
+                </div>
+            </div>
+
+            <!-- 활동 통계 요약 (V13.3 명칭 변경: 월 삭제) -->
+            <div class="grid grid-cols-3 gap-3">
+                <div class="glass p-5 rounded-2xl border border-white shadow-sm text-center">
+                    <div class="text-[9px] font-black text-slate-400 uppercase mb-1">유입</div>
+                    <div id="stat_leads" class="text-xl font-black text-slate-900">-</div>
+                </div>
+                <div class="glass p-5 rounded-2xl border border-white shadow-sm text-center">
+                    <div class="text-[9px] font-black text-slate-400 uppercase mb-1">예약</div>
+                    <div id="stat_bookings" class="text-xl font-black text-blue-500">-</div>
+                </div>
+                <div class="glass p-5 rounded-2xl border border-white shadow-sm text-center">
+                    <div class="text-[9px] font-black text-slate-400 uppercase mb-1">확정</div>
+                    <div id="stat_completed" class="text-xl font-black text-green-500">-</div>
+                </div>
+            </div>
+
+            <!-- 상세 리드 목록 -->
+            <div class="bg-white rounded-[2rem] shadow-xl border border-white overflow-hidden">
+                <div class="p-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                    <select id="monthFilter" onchange="renderStatsAndTable()"
+                        class="bg-white border border-slate-100 px-3 py-1.5 rounded-xl text-xs font-bold outline-none"></select>
+                    <span class="text-[10px] font-black text-slate-400 uppercase">상세 리포트</span>
+                </div>
+                <div class="overflow-x-auto no-scrollbar">
+                    <table class="w-full text-left min-w-[500px]">
+                        <thead class="bg-slate-50 text-[9px] font-black text-slate-400 uppercase border-b">
+                            <tr>
+                                <th class="px-6 py-4">일자 / 대상</th>
+                                <th class="px-6 py-4">진행 현황</th>
+                                <th class="px-6 py-4">인센티브</th>
+                                <th class="px-6 py-4 text-right">정산</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leadTableBody" class="divide-y divide-slate-50 text-[11px]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- [NEW] 개인정보 관리 모달 -->
+    <div id="profileModal"
+        class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-[100]">
+        <div class="bg-white rounded-[3rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
+            <h3 class="text-xl font-black text-slate-900 mb-6 pl-4 border-l-4 border-blue-600">개인정보 관리</h3>
+
+            <div class="space-y-6">
+                <!-- 비밀번호 변경 -->
+                <div class="space-y-3">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase ml-1">비밀번호 변경 (4자리)</label>
+                    <input type="password" id="m_oldPwd" maxlength="4" placeholder="현재 비밀번호 (본인확인)"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-sm text-center tracking-widest">
+                    <input type="password" id="m_newPwd" maxlength="4" placeholder="새 비밀번호 (변경시만 입력)"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none font-bold text-sm text-center tracking-widest">
+                </div>
+
+                <!-- 계좌 정보 변경 (인플루언서용) -->
+                <div id="m_accountArea" class="space-y-3 pt-4 border-t border-slate-100">
+                    <label class="block text-[10px] font-black text-slate-400 uppercase ml-1">정산 계좌 정보 수정</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" id="m_bank" placeholder="은행명"
+                            class="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold">
+                        <input type="text" id="m_account" placeholder="계좌번호"
+                            class="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold">
+                    </div>
+                    <p id="m_empNotice" class="hidden text-[10px] text-slate-400 italic">직원은 본사 급여 정산 대상으로 계좌 수정이
+                        불필요합니다.</p>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-8">
+                <button onclick="document.getElementById('profileModal').classList.add('hidden')"
+                    class="flex-1 py-4 text-slate-400 font-bold text-sm">취소</button>
+                <button onclick="saveProfile()"
+                    class="flex-[2] py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl active:scale-95 transition-all text-sm">정보
+                    저장하기</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        var masterData = null;
+        var myLinks = [];
+        var currentPartner = "";
+        var currentPwd = "";
+
+        function checkName() {
+            var n = document.getElementById('partnerName').value.trim();
+            if (!n) return;
+            google.script.run.withSuccessHandler(res => {
+                if (!res.exists) return alert("관리자가 등록하지 않은 성함입니다.");
+                if (res.isBlocked) return alert("계약이 종료된 파트너입니다.");
+                currentPartner = n;
+                document.getElementById('pwdArea').classList.remove('hidden');
+
+                var isEmp = (res.type === "직원");
+                if (res.isRegistered) {
+                    document.getElementById('statusMsg').textContent = "등록된 비밀번호를 입력하세요.";
+                    document.getElementById('regFields').classList.add('hidden');
+                } else {
+                    document.getElementById('statusMsg').textContent = isEmp ? "직원 등록 확인되었습니다. 비밀번호 4자리를 설정하세요." : "최초 접속입니다. 비밀번호 4자리와 계좌를 등록하세요.";
+                    document.getElementById('regFields').classList.toggle('hidden', isEmp);
+                }
+            }).checkPartnerNameStatus(n);
+        }
+
+        function login() {
+            var pwd = document.getElementById('partnerPwd').value;
+            var b = document.getElementById('bank').value;
+            var a = document.getElementById('account').value;
+            if (pwd.length !== 4) return alert("비밀번호 4자리 숫자를 입력하세요.");
+            currentPwd = pwd;
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    document.getElementById('loginSection').classList.add('hidden');
+                    document.getElementById('dashboard').classList.remove('hidden');
+                    document.getElementById('btnProfile').classList.remove('hidden');
+                    document.getElementById('userNameDisplay').textContent = currentPartner + " 파트너님";
+                    refreshAllData();
+                })
+                .withFailureHandler(err => alert(err))
+                .verifyOrRegisterPartner(currentPartner, pwd, b, a);
+        }
+
+        function refreshAllData() {
+            google.script.run.withSuccessHandler(data => {
+                masterData = data;
+                initMonthFilter();
+                renderStatsAndTable();
+                // 계좌 정보 폼에 미리 채워넣기 (모달용)
+                document.getElementById('m_bank').value = data.bank || "";
+                document.getElementById('m_account').value = data.account || "";
+                var isEmp = (data.type === "직원");
+                document.getElementById('m_bank').disabled = isEmp;
+                document.getElementById('m_account').disabled = isEmp;
+                document.getElementById('m_empNotice').classList.toggle('hidden', !isEmp);
+            }).getPartnerData(currentPartner, currentPwd);
+            google.script.run.withSuccessHandler(links => { myLinks = links; renderLinksList(); }).getPartnerLinks(currentPartner);
+        }
+
+        function initMonthFilter() {
+            var filter = document.getElementById('monthFilter');
+            var months = Object.keys(masterData.stats.monthly).sort().reverse();
+            filter.innerHTML = '<option value="ALL">전체 기간 실적 보기</option>';
+            months.forEach(m => { filter.innerHTML += `<option value="${m}">${m} 실적 내역</option>`; });
+        }
+
+        function renderStatsAndTable() {
+            var m = document.getElementById('monthFilter').value;
+            var d;
+
+            if (m === "ALL") {
+                d = { leads: 0, bookings: 0, completed: 0, incentive: 0, settled: 0, pending: 0 };
+                Object.values(masterData.stats.monthly).forEach(month => {
+                    d.leads += month.leads;
+                    d.bookings += month.bookings;
+                    d.completed += month.completed;
+                    d.incentive += month.incentive;
+                    d.settled += month.settled;
+                    d.pending += month.pending;
+                });
+            } else {
+                d = masterData.stats.monthly[m] || { leads: 0, bookings: 0, completed: 0, incentive: 0, settled: 0, pending: 0 };
+            }
+
+            // 누적 합계 표시 (V13.2)
+            document.getElementById('stat_totalSettled').textContent = new Intl.NumberFormat().format(masterData.stats.totalSettled) + "원";
+            document.getElementById('stat_totalPending').textContent = new Intl.NumberFormat().format(masterData.stats.totalPending) + "원";
+
+            // 선택된 기간 데이터 표시
+            document.getElementById('stat_leads').textContent = d.leads;
+            document.getElementById('stat_bookings').textContent = d.bookings;
+            document.getElementById('stat_completed').textContent = d.completed;
+
+            // 정산 현황 표시
+            document.getElementById('stat_monthSettled').innerHTML = `
+                <div class="text-[10px] text-slate-400">지급: ${new Intl.NumberFormat().format(d.settled)} / 대기: ${new Intl.NumberFormat().format(d.pending)}</div>
+                <div class="text-lg text-blue-400 font-black">${new Intl.NumberFormat().format(d.incentive)}원</div>
+            `;
+
+            var body = document.getElementById('leadTableBody');
+            body.innerHTML = "";
+            masterData.stats.allLeads.forEach(l => {
+                if (m !== "ALL" && l.month !== m) return;
+                var tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold text-slate-700">${l.date}<br><span class="text-[9px] text-slate-400">${l.apt || l.region}</span></td>
+                    <td class="px-6 py-4 font-black">${l.isBooking ? '예약' : '대기'} / ${l.isCompleted ? '시공완료' : '-'}</td>
+                    <td class="px-6 py-4 font-black text-slate-800">${new Intl.NumberFormat().format(l.incentive)}원</td>
+                    <td class="px-6 py-4 text-right font-black ${l.settlement === '정산완료' ? 'text-blue-500' : 'text-slate-300'}">${l.settlement}</td>
+                `;
+                body.appendChild(tr);
+            });
+        }
+
+        function renderLinksList() {
+            var container = document.getElementById('myLinksContainer');
+            if (myLinks.length === 0) { container.innerHTML = '<p class="text-[10px] text-slate-300 italic">아직 발급된 링크가 없습니다.</p>'; return; }
+            container.innerHTML = "";
+            myLinks.forEach(link => {
+                var div = document.createElement('div');
+                div.className = "flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 slide-up";
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-4">
+                        <div class="text-[8px] font-black text-blue-500 uppercase mb-0.5">${link.source}</div>
+                        <div class="text-[10px] font-mono text-slate-500 truncate">${link.url}</div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="copyToClipboard('${link.url}')" class="bg-white border border-slate-200 px-3 py-1.5 rounded-lg text-[9px] font-black active:scale-90 shadow-sm">복사</button>
+                        <button onclick="deleteLink('${link.sid}')" class="bg-red-50 text-red-500 border border-red-100 px-3 py-1.5 rounded-lg text-[9px] font-black active:scale-90 shadow-sm">삭제</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function createNewLink() {
+            var s = document.getElementById('media').value;
+            if (!s) return alert("홍보할 매체를 선택해주세요!");
+            google.script.run.withSuccessHandler(url => { alert("링크가 발급되었습니다. (기존 주소 재사용 포함)"); refreshAllData(); }).generateShortLink(currentPartner, currentPwd, s);
+        }
+
+        function deleteLink(sid) {
+            if (!confirm("정말 이 링크를 삭제할까요?")) return;
+            google.script.run.withSuccessHandler(() => { alert("삭제되었습니다."); refreshAllData(); }).deleteShortLink(sid);
+        }
+
+        function copyToClipboard(txt) {
+            navigator.clipboard.writeText(txt).then(() => alert("링크가 복사되었습니다!"));
+        }
+
+        function openProfileModal() {
+            document.getElementById('m_oldPwd').value = "";
+            document.getElementById('m_newPwd').value = "";
+            document.getElementById('profileModal').classList.remove('hidden');
+        }
+
+        function saveProfile() {
+            var oldPwd = document.getElementById('m_oldPwd').value;
+            var newPwd = document.getElementById('m_newPwd').value;
+            var bank = document.getElementById('m_bank').value;
+            var acc = document.getElementById('m_account').value;
+
+            if (oldPwd.length !== 4) return alert("현재 비밀번호 4자리를 입력해야 정보를 저장할 수 있습니다.");
+            if (newPwd && newPwd.length !== 4) return alert("새 비밀번호는 4자리 숫자로 입력해주세요.");
+
+            if (!confirm("정보를 업데이트하시겠습니까?")) return;
+
+            google.script.run
+                .withSuccessHandler(() => {
+                    alert("성공적으로 업데이트되었습니다.");
+                    if (newPwd) currentPwd = newPwd;
+                    document.getElementById('profileModal').classList.add('hidden');
+                    refreshAllData();
+                })
+                .withFailureHandler(err => alert(err))
+                .updatePartnerProfile(currentPartner, oldPwd, newPwd, bank, acc);
+        }
+    </script>
+</body>
+
+</html>

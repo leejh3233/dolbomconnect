@@ -15,7 +15,10 @@ export async function GET(request: Request) {
 
         console.log(`[Links GET] Loading links for ${name}. Sheet headers:`, h);
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        // Use host header for dynamic domain
+        const host = request.headers.get('host');
+        const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+        const baseUrl = `${protocol}://${host}`;
 
         const links = rows
             .filter(r => String(r.get(h[1])).trim() === String(name).trim()) // Index 1: 이름
@@ -59,7 +62,10 @@ export async function POST(request: Request) {
             String(r.get(h[2])).trim() === String(source).trim()
         );
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        // Use host header for dynamic domain
+        const host = request.headers.get('host');
+        const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+        const baseUrl = `${protocol}://${host}`;
 
         if (existing) {
             return NextResponse.json({ url: `${baseUrl}/?sid=${existing.get(h[0])}` });

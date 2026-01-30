@@ -572,12 +572,26 @@ export default function AdminPage() {
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
                     <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-in zoom-in duration-200">
                         <h3 className="text-xl font-black mb-1">{settleModal.partner}님 정산</h3>
-                        <p className="text-slate-400 text-xs font-bold mb-6">아래 계좌로 입금 후 정산 완료를 누르세요.</p>
+                        <p className="text-slate-400 text-xs font-bold mb-6">
+                            {settleModal.isEmployee
+                                ? '직원 급여 합산 대상입니다.'
+                                : '아래 계좌로 입금 후 정산 완료를 누르세요.'}
+                        </p>
 
                         <div className="bg-slate-50 p-6 rounded-2xl mb-6 border border-slate-100">
-                            <div className="text-[10px] font-black text-slate-400 uppercase mb-1">입금 계좌 정보</div>
-                            <div className="text-lg font-black text-slate-900 mb-1">{settleModal.bank} {settleModal.account}</div>
-                            <div className="text-sm font-bold text-slate-500">예금주: {settleModal.partner}</div>
+                            {settleModal.isEmployee ? (
+                                <div className="text-center py-4 space-y-2">
+                                    <span className="text-2xl">💼</span>
+                                    <div className="text-sm font-black text-slate-700">월급에 합산 지급</div>
+                                    <p className="text-[10px] text-slate-400">별도 이체 없이 급여일에 포함되어<br />지급됨을 확인해주세요.</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="text-[10px] font-black text-slate-400 uppercase mb-1">입금 계좌 정보</div>
+                                    <div className="text-lg font-black text-slate-900 mb-1">{settleModal.bank} {settleModal.account}</div>
+                                    <div className="text-sm font-bold text-slate-500">예금주: {settleModal.partner}</div>
+                                </>
+                            )}
 
                             <div className="mt-6 pt-6 border-t border-slate-200">
                                 <div className="flex justify-between items-center">
@@ -589,7 +603,9 @@ export default function AdminPage() {
 
                         <div className="flex gap-3">
                             <button onClick={() => setSettleModal(null)} className="flex-1 py-4 font-bold text-slate-400 text-sm">취소</button>
-                            <button onClick={settlePartner} className="flex-[2] bg-blue-600 text-white rounded-2xl font-black shadow-xl text-sm active:scale-95 transition-all">정산 완료 처리</button>
+                            <button onClick={settlePartner} className="flex-[2] bg-blue-600 text-white rounded-2xl font-black shadow-xl text-sm active:scale-95 transition-all">
+                                {settleModal.isEmployee ? '합산 처리 완료' : '정산 완료 처리'}
+                            </button>
                         </div>
                     </div>
                 </div>

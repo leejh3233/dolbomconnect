@@ -405,7 +405,7 @@ export default function PartnerPage() {
                                 <div className="text-xl font-black text-red-500">{fmt(masterData?.stats?.totalPending)}원</div>
                             </div>
                             <div className="bg-slate-900 p-5 rounded-2xl shadow-xl text-center text-white col-span-2 md:col-span-1">
-                                <div className="text-[9px] font-black text-slate-500 uppercase mb-1">성적표 합계</div>
+                                <div className="text-[9px] font-black text-slate-500 uppercase mb-1">합계</div>
                                 <div className="text-lg font-black text-blue-400">
                                     {fmt(masterData?.stats?.monthly?.[monthFilter]?.incentive || 0)}원
                                 </div>
@@ -422,7 +422,7 @@ export default function PartnerPage() {
                                 >
                                     <option value="ALL">전체 기간 실적 보기</option>
                                     {months.map(m => (
-                                        <option key={m} value={m}>{m} 실적 내역</option>
+                                        <option key={m} value={m}>{m === 'NaN-NaN' ? '날짜오류' : m} 실적 내역</option>
                                     ))}
                                 </select>
                                 <span className="text-[10px] font-black text-slate-400 uppercase">상세 리포트</span>
@@ -432,7 +432,7 @@ export default function PartnerPage() {
                                     <thead className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase border-b">
                                         <tr>
                                             <th className="px-6 py-4">일자 / 대상</th>
-                                            <th className="px-6 py-4">진행 현황</th>
+                                            <th className="px-6 py-4">상태</th>
                                             <th className="px-6 py-4">인센티브</th>
                                             <th className="px-6 py-4 text-right">정산</th>
                                         </tr>
@@ -441,7 +441,11 @@ export default function PartnerPage() {
                                         {filteredLeads.map((l: any, i: number) => (
                                             <tr key={i}>
                                                 <td className="px-6 py-4 font-bold text-slate-700">{l.date}<br /><span className="text-[9px] text-slate-400">{l.apt || l.region}</span></td>
-                                                <td className="px-6 py-4 font-black">{l.isBooking ? '예약' : '대기'} / {l.isCompleted ? '시공완료' : '-'}</td>
+                                                <td className="px-6 py-4 font-black">
+                                                    <span className={`px-2 py-1 rounded-lg ${l.isCompleted ? 'bg-blue-50 text-blue-600' : l.isBooking ? 'bg-green-50 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
+                                                        {l.isCompleted ? '시공완료' : l.isBooking ? '예약완료' : '상담대기'}
+                                                    </span>
+                                                </td>
                                                 <td className="px-6 py-4 font-black text-slate-800">{fmt(l.incentive)}원</td>
                                                 <td className={`px-6 py-4 text-right font-black ${l.settlement === '정산완료' ? 'text-blue-500' : 'text-slate-300'}`}>{l.settlement}</td>
                                             </tr>

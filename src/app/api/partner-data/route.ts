@@ -31,7 +31,26 @@ export async function GET(request: Request) {
                 const dateStr = r.get(lh[0]); // Index 0: 날짜
                 if (!dateStr || String(dateStr).trim() === '') continue; // Skip empty rows
 
-                const dateObj = new Date(dateStr);
+                // Robust Date Parsing
+                let dateObj = new Date(dateStr);
+                if (isNaN(dateObj.getTime())) {
+                    // Try parsing "YYYY. MM. DD" format common in Korea
+                    const parts = dateStr.split('.').map((p: string) => p.trim());
+                    if (parts.length >= 3) {
+                        dateObj = new Date(
+                            parseInt(parts[0]),
+                            parseInt(parts[1]) - 1,
+                            parseInt(parts[2])
+                        );
+                    }
+                }
+
+                // If still invalid, default to today or skip
+                if (isNaN(dateObj.getTime())) {
+                    console.error(`Invalid date found: ${dateStr}`);
+                    continue;
+                }
+
                 const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
 
 

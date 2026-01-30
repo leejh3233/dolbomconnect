@@ -314,7 +314,6 @@ export default function PartnerPage() {
                                         <option value="블로그">블로그</option>
                                         <option value="당근마켓">당근마켓</option>
                                         <option value="카페/커뮤니티">카페/커뮤니티</option>
-                                        <option value="네이버 QR">네이버 QR (명함/홍보물)</option>
                                         <option value="지인소개">지인소개/직접</option>
                                     </select>
                                     <button onClick={createNewLink} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm active:scale-95">링크 생성</button>

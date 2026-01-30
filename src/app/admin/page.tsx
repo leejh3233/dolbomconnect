@@ -100,6 +100,14 @@ export default function AdminPage() {
     };
 
     useEffect(() => {
+        const storedAuth = localStorage.getItem('admin_auth');
+        if (storedAuth === 'dolbom4146') {
+            setPassword(storedAuth);
+            setIsLoggedIn(true);
+        }
+    }, []);
+
+    useEffect(() => {
         if (isLoggedIn) {
             fetchData();
         }
@@ -110,13 +118,21 @@ export default function AdminPage() {
         if (password === 'dolbom4146') {
             setIsLoggedIn(true);
             setLoginError(false);
+            localStorage.setItem('admin_auth', password);
         } else {
             setLoginError(true);
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('admin_auth');
+        setIsLoggedIn(false);
+        setPassword('');
+    };
+
     const fetchData = async () => {
-        setIsLoading(true);
+        // Loading spinner only on initial load or manual refresh, not background updates
+        if (!masterData) setIsLoading(true);
         try {
             const res = await fetch('/api/admin');
             const data = await res.json();
@@ -130,15 +146,29 @@ export default function AdminPage() {
     };
 
     const updateStatus = async (rowId: number, col: number, value: any) => {
+        // Optimistic Update: Update UI immediately
+        const prevData = JSON.parse(JSON.stringify(masterData)); // Deep copy for rollback
+        const newData = { ...masterData };
+        const lead = newData.leads.find((l: any) => l.rowId === rowId);
+
+        if (lead) {
+            if (col === 9) lead.isBooking = value;
+            if (col === 10) lead.isCompleted = value;
+            setMasterData(newData); // Update local state immediately
+        }
+
         try {
             await fetch('/api/admin', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ rowId, col, value })
             });
-            fetchData(); // Refresh
+            // Background sync (optional, to ensure consistency)
+            // fetchData(); 
         } catch (err) {
             console.error('Update status failed:', err);
+            setMasterData(prevData); // Revert on failure
+            alert('업데이트에 실패했습니다. 다시 시도해주세요.');
         }
     };
 
@@ -203,9 +233,9 @@ export default function AdminPage() {
                         돌봄 커넥트 관리자 <span className="text-slate-200 font-normal mx-2">|</span>
                         <span className="text-xs text-slate-400 font-bold ml-1"> 통합 관제 시스템</span>
                     </h1>
-                    <Link href="/portal" className="bg-slate-50 px-4 py-2 rounded-xl text-[11px] font-black text-slate-600 border border-slate-100">
-                        나가기
-                    </Link>
+                    <button onClick={handleLogout} className="bg-slate-50 px-4 py-2 rounded-xl text-[11px] font-black text-slate-600 border border-slate-100 hover:bg-slate-100 cursor-pointer">
+                        로그아웃
+                    </button>
                 </div>
             </header>
 

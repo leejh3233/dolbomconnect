@@ -25,6 +25,54 @@ export default function PartnerPage() {
     const [media, setMedia] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+
+
+    // Session Persistence
+    useEffect(() => {
+        const stored = localStorage.getItem('partner_auth');
+        if (stored) {
+            try {
+                const { name, password, isEmployee: storedEmp } = JSON.parse(stored);
+                if (name && password) {
+                    setPartnerName(name);
+                    setPartnerPwd(password);
+                    if (storedEmp) setIsEmployee(true);
+
+                    // Auto-load dashboard
+                    setStep(2);
+                    verifyAndLoad(name, password);
+                }
+            } catch (e) {
+                console.error("Session parse error", e);
+                localStorage.removeItem('partner_auth');
+            }
+        }
+    }, []);
+
+    const verifyAndLoad = async (name: string, password: string) => {
+        setIsLoading(true);
+        try {
+            const res = await fetch(`/api/partner-data?empId=${encodeURIComponent(name)}&password=${encodeURIComponent(password)}`);
+            const data = await res.json();
+            if (data.error) {
+                // If invalid credentials, clear session
+                if (res.status === 401) {
+                    localStorage.removeItem('partner_auth');
+                    setStep(1);
+                    return;
+                }
+            }
+            setMasterData(data);
+            const resLinks = await fetch(`/api/links?name=${encodeURIComponent(name)}`);
+            const links = await resLinks.json();
+            setMyLinks(links);
+        } catch (err) {
+            console.error('Auto-login failed:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const checkName = async () => {
         if (!partnerName.trim()) return;
         try {
@@ -36,19 +84,15 @@ export default function PartnerPage() {
             const data = await res.json();
 
             if (res.status === 404) {
-                // First time user, or not in system
                 return alert(data.error);
             }
 
             setShowPwdArea(true);
 
-            // Fix: Differentiate 400 (Setup Required) vs 401 (Wrong Password, meaning registered)
             if (res.status === 400) {
-                // Password need to be set
                 setStatusMsg('신규 파트너이시군요! 비밀번호를 설정해주세요.');
                 setIsRegistered(false);
             } else {
-                // 401 or others means they exist and have password
                 setStatusMsg('등록된 비밀번호를 입력하세요.');
                 setIsRegistered(true);
             }
@@ -60,16 +104,11 @@ export default function PartnerPage() {
     const login = async () => {
         if (partnerPwd.length !== 4) return alert("비밀번호 4자리 숫자를 입력하세요.");
 
-        // If registering (not registered), we need to send type
-        // The verify API with password will register/login
         try {
             const body: any = { name: partnerName, password: partnerPwd };
             if (!isRegistered) { // First time setting password
                 body.bank = bank;
                 body.account = account;
-                // If employee, bank/account might be empty, handled by backend or ignored? 
-                // Wait, verify API expects bank/account for registration.
-                // Let's assume we need to pass empty strings if employee to avoid nulls
                 if (isEmployee) {
                     body.bank = '';
                     body.account = '';
@@ -86,6 +125,13 @@ export default function PartnerPage() {
             });
             const data = await res.json();
             if (data.success) {
+                // Save session
+                localStorage.setItem('partner_auth', JSON.stringify({
+                    name: partnerName,
+                    password: partnerPwd,
+                    isEmployee
+                }));
+
                 setStep(2);
                 fetchDashboardData();
             } else {
@@ -93,6 +139,13 @@ export default function PartnerPage() {
             }
         } catch (err) {
             console.error('Login failed:', err);
+        }
+    };
+
+    const handleLogout = () => {
+        if (confirm('로그아웃 하시겠습니까?')) {
+            localStorage.removeItem('partner_auth');
+            window.location.href = '/portal';
         }
     };
 
@@ -204,9 +257,9 @@ export default function PartnerPage() {
                             </button>
                         )}
                     </div>
-                    <Link href="/portal" className="bg-slate-800 px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-slate-700 active:scale-95 transition-transform">
+                    <button onClick={handleLogout} className="bg-slate-800 px-4 py-2 rounded-xl text-[11px] font-bold hover:bg-slate-700 active:scale-95 transition-transform">
                         나가기
-                    </Link>
+                    </button>
                 </div>
             </header>
 

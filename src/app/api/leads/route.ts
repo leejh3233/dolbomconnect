@@ -10,8 +10,9 @@ const normalizeStr = (s: any) => String(s || '').trim().normalize('NFC').toLower
 const isTrue = (val: any) => {
     if (val === true || val === 1 || val === '1') return true;
     const s = normalizeStr(val).toUpperCase();
-    // 한국어 환경에서 흔히 쓰이는 체크 표시들 (V, O, X, 1, TRUE 등)
-    return ['TRUE', '1', 'V', 'CHECKED', 'O', 'YES', 'Y', 'X'].includes(s);
+    // 한국어 환경에서 흔히 쓰이는 모든 체크/표시 기호 대응 (V, O, X, circle, checkmarks 등)
+    const trueValues = ['TRUE', '1', 'V', 'CHECKED', 'O', 'YES', 'Y', 'X', '✔', '✅', '☑', '○', '◎'];
+    return trueValues.includes(s);
 };
 
 export async function GET(request: NextRequest) {

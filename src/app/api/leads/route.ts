@@ -151,6 +151,23 @@ export async function POST(request: NextRequest) {
         // 2. 일반 고객 신청인 경우: 신규 행 추가
         else {
             console.log(`[Leads POST] Creating new lead row for: ${recommender}`);
+
+            // KST 시간대 보정 (UTC + 9) 및 기존 시트 형식 (2026. 1. 22 오전 1:57:54) 구현
+            const now = new Date();
+            const kstOffset = 9 * 60 * 60 * 1000;
+            const kstDate = new Date(now.getTime() + kstOffset);
+
+            const y = kstDate.getUTCFullYear();
+            const m = kstDate.getUTCMonth() + 1;
+            const d = kstDate.getUTCDate();
+            let hours = kstDate.getUTCHours();
+            const ampm = hours >= 12 ? '오후' : '오전';
+            hours = hours % 12 || 12; // 1~12시 형식
+            const mm = String(kstDate.getUTCMinutes()).padStart(2, '0');
+            const ss = String(kstDate.getUTCSeconds()).padStart(2, '0');
+
+            const dateStr = `${y}. ${m}. ${d} ${ampm} ${hours}:${mm}:${ss}`;
+
             const newRow: any = {};
             h.forEach(header => {
                 const nh = normalizeStr(header);
@@ -160,7 +177,11 @@ export async function POST(request: NextRequest) {
                 else if (nh.includes('평수')) newRow[header] = data.pyeong || '';
                 else if (nh.includes('시공범위')) newRow[header] = data.scope || '';
                 else if (nh.includes('유입경로')) newRow[header] = data.source || '직접유입';
-                else if (nh.includes('날짜') || nh.includes('일자')) newRow[header] = new Date().toISOString().slice(0, 10);
+                else if (nh.includes('날짜') || nh.includes('일자')) newRow[header] = dateStr;
+                else if (nh.includes('진행') || nh.includes('상태')) newRow[header] = '상담대기';
+                else if (nh === normalizeStr('매출액') || nh === normalizeStr('판매금액')) newRow[header] = '0';
+                else if (nh.includes('인센티브')) newRow[header] = '0';
+                else if (nh.includes('정산')) newRow[header] = '미정산';
             });
 
             await sheet.addRow(newRow);

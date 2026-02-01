@@ -3,15 +3,7 @@ import { getSpreadsheet } from '@/lib/google-sheets';
 
 export const dynamic = 'force-dynamic';
 
-const CORS_HEADERS = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
 
-export async function OPTIONS() {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
-}
 
 export async function GET(request: NextRequest) {
     try {
@@ -33,7 +25,7 @@ export async function GET(request: NextRequest) {
                     .filter(name => name && String(name).trim() !== '')
                     .map(name => String(name).trim())
             )).sort();
-            return NextResponse.json({ partners: partnerNames }, { headers: CORS_HEADERS });
+            return NextResponse.json({ partners: partnerNames });
         }
 
         if (type === 'apartments' && recommender) {
@@ -56,13 +48,13 @@ export async function GET(request: NextRequest) {
                     item.aptName !== '' &&
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
-            return NextResponse.json({ apartments }, { headers: CORS_HEADERS });
+            return NextResponse.json({ apartments });
         }
 
-        return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
+        return NextResponse.json({ status: "ok" });
     } catch (error: any) {
         console.error('Leads GET error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
@@ -102,7 +94,7 @@ export async function POST(request: NextRequest) {
             if (h[12]) targetRow.set(h[12], '미정산'); // 정산상태
 
             await targetRow.save();
-            return NextResponse.json({ success: true, mode: 'updated' }, { headers: CORS_HEADERS });
+            return NextResponse.json({ success: true, mode: 'updated' });
         } else {
             // 일치하는 행이 없으면 새로 추가 (Fallback)
             const rowData: Record<string, any> = {};
@@ -139,10 +131,10 @@ export async function POST(request: NextRequest) {
                 console.error('DataValidation error:', e);
             }
 
-            return NextResponse.json({ success: true, mode: 'inserted' }, { headers: CORS_HEADERS });
+            return NextResponse.json({ success: true, mode: 'inserted' });
         }
     } catch (error: any) {
         console.error('Leads POST error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

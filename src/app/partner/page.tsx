@@ -87,6 +87,11 @@ export default function PartnerPage() {
                 return alert(data.error);
             }
 
+            // Automatically set isEmployee based on backend data
+            if (data.isEmployee !== undefined) {
+                setIsEmployee(data.isEmployee);
+            }
+
             setShowPwdArea(true);
 
             if (res.status === 400) {
@@ -305,34 +310,37 @@ export default function PartnerPage() {
                                     </div>
                                     {!isRegistered && (
                                         <div className="space-y-4">
-                                            <label className="flex items-center gap-2 p-3 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isEmployee}
-                                                    onChange={(e) => setIsEmployee(e.target.checked)}
-                                                    className="w-4 h-4 text-blue-600 rounded"
-                                                />
-                                                <span className="text-[11px] font-bold text-slate-600">돌봄커넥트 정직원입니다 (계좌정보 생략)</span>
-                                            </label>
-
-                                            {!isEmployee && (
-                                                <div className="space-y-3 slide-up">
-                                                    <label className="block text-[10px] font-black text-slate-400 uppercase ml-1">계좌 정보 (정산용)</label>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <input
-                                                            type="text"
-                                                            value={bank}
-                                                            onChange={(e) => setBank(e.target.value)}
-                                                            placeholder="은행명"
-                                                            className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold"
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={account}
-                                                            onChange={(e) => setAccount(e.target.value)}
-                                                            placeholder="계좌번호"
-                                                            className="px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold"
-                                                        />
+                                            {isEmployee ? (
+                                                <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-[1.5rem] text-center slide-up">
+                                                    <div className="text-2xl mb-2">💼</div>
+                                                    <div className="text-[11px] font-black text-blue-700">돌봄커넥트 정직원 확인</div>
+                                                    <p className="text-[10px] text-blue-500 font-bold mt-1 leading-relaxed">
+                                                        시공 인센티브는 매월 정해진<br />
+                                                        월급날에 합산하여 지급됩니다.
+                                                    </p>
+                                                    <p className="text-[9px] text-slate-400 mt-2 font-medium">별도의 계좌 정보 등록이 필요 없습니다.</p>
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-4 slide-up">
+                                                    <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
+                                                        <div className="text-[10px] font-black text-slate-400 uppercase mb-3 ml-1">계좌 정보 (정산용)</div>
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <input
+                                                                type="text"
+                                                                value={bank}
+                                                                onChange={(e) => setBank(e.target.value)}
+                                                                placeholder="은행명"
+                                                                className="px-4 py-3 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-colors"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={account}
+                                                                onChange={(e) => setAccount(e.target.value)}
+                                                                placeholder="계좌번호"
+                                                                className="px-4 py-3 bg-white border border-slate-100 rounded-xl text-xs font-bold outline-none focus:border-blue-500 transition-colors"
+                                                            />
+                                                        </div>
+                                                        <p className="text-[9px] text-slate-400 mt-3 ml-1 font-medium italic">* 정확한 정산을 위해 본인 명의의 계좌를 입력하세요.</p>
                                                     </div>
                                                 </div>
                                             )}

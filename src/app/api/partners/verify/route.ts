@@ -35,23 +35,45 @@ export async function POST(request: Request) {
 
                 if (sheetPwd === "") {
                     if (!inputPwd || inputPwd.length !== 4) {
-                        return NextResponse.json({ error: '비밀번호 4자리 설정이 필요합니다.' }, { status: 400 });
+                        return NextResponse.json({
+                            error: '비밀번호 4자리 설정이 필요합니다.',
+                            isEmployee,
+                            type: sheetType || '인플루언서'
+                        }, { status: 400 });
                     }
                     if (!isEmployee && (!bank || !account)) {
-                        return NextResponse.json({ error: '인플루언서는 정산용 계좌 정보가 필요합니다.' }, { status: 400 });
+                        return NextResponse.json({
+                            error: '인플루언서는 정산용 계좌 정보가 필요합니다.',
+                            isEmployee,
+                            type: sheetType || '인플루언서'
+                        }, { status: 400 });
                     }
 
                     r.set(ph[1], inputPwd);
                     if (ph[2]) r.set(ph[2], bank || '');
                     if (ph[3]) r.set(ph[3], account || '');
                     await r.save();
-                    return NextResponse.json({ success: true, message: 'SUCCESS' });
+                    return NextResponse.json({
+                        success: true,
+                        message: 'SUCCESS',
+                        isEmployee,
+                        type: sheetType || '인플루언서'
+                    });
 
                 } else {
                     if (sheetPwd === inputPwd) {
-                        return NextResponse.json({ success: true, message: 'LOGGED_IN' });
+                        return NextResponse.json({
+                            success: true,
+                            message: 'LOGGED_IN',
+                            isEmployee,
+                            type: sheetType || '인플루언서'
+                        });
                     }
-                    return NextResponse.json({ error: '비밀번호가 틀렸습니다.' }, { status: 401 });
+                    return NextResponse.json({
+                        error: '비밀번호가 틀렸습니다.',
+                        isEmployee,
+                        type: sheetType || '인플루언서'
+                    }, { status: 401 });
                 }
             }
         }

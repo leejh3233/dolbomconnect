@@ -19,9 +19,11 @@ export async function GET(request: NextRequest) {
         const lh = sheet.headerValues;
 
         if (type === 'partners') {
+            const recommenderIdx = lh.findIndex(h => h.includes('추천인'));
+            const targetIdx = recommenderIdx !== -1 ? recommenderIdx : 3;
             const partnerNames = Array.from(new Set(
                 rows
-                    .map(row => row.get(lh[3]))
+                    .map(row => row.get(lh[targetIdx]))
                     .filter(name => name && String(name).trim() !== '')
                     .map(name => String(name).trim())
             )).sort();
@@ -31,15 +33,12 @@ export async function GET(request: NextRequest) {
         if (type === 'apartments' && recommender) {
             console.log(`[Leads API] Fetching apartments for recommender: "${recommender}"`);
 
-            // 헤더 인덱스 찾기 (안전을 위해 이름으로 검색)
             const recommenderIdx = lh.findIndex(h => h.includes('추천인'));
             const aptNameIdx = lh.findIndex(h => h.includes('아파트명'));
             const reservedIdx = lh.findIndex(h => h.includes('예약완료'));
-
-            console.log(`[Leads API] Column Indices - Recommender: ${recommenderIdx}, Apt: ${aptNameIdx}, Reserved: ${reservedIdx}`);
+            const completedIdx = lh.findIndex(h => h.includes('시공완료'));
 
             if (recommenderIdx === -1 || aptNameIdx === -1 || reservedIdx === -1) {
-                console.error(`[Leads API] Required columns not found. Headers:`, lh);
                 return NextResponse.json({ apartments: [], error: 'Sheet structure error' });
             }
 
@@ -47,14 +46,16 @@ export async function GET(request: NextRequest) {
                 .filter(r => {
                     const rName = String(r.get(lh[recommenderIdx]) || '').trim().toLowerCase();
                     const bookVal = r.get(lh[reservedIdx]);
+                    const compVal = completedIdx !== -1 ? r.get(lh[completedIdx]) : false;
 
-                    // 체크박스 값 체크 (true, "TRUE", "checked" 등 대응)
                     const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE' || String(bookVal) === '1';
+                    const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE' || String(compVal) === '1';
 
-                    const match = rName === recommender.trim().toLowerCase() && isBooked;
+                    // 예약완료(I)는 TRUE이고 시공완료(J)는 FALSE인 것만
+                    const match = rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
 
                     if (rName === recommender.trim().toLowerCase()) {
-                        console.log(`[Leads API] Row Check: Apt="${r.get(lh[aptNameIdx])}", isBooked=${isBooked}, rawValue="${bookVal}"`);
+                        console.log(`[Leads API] Row Check: Apt="${r.get(lh[aptNameIdx])}", Booked=${isBooked}, Comp=${isCompleted}, Result=${match}`);
                     }
 
                     return match;
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
 
-            console.log(`[Leads API] Successfully found ${apartments.length} apartments`);
+            console.log(`[Leads API] Found ${apartments.length} available apartments`);
             return NextResponse.json({ apartments });
         }
 
@@ -90,68 +91,47 @@ export async function POST(request: NextRequest) {
         const recommender = String(data.recommender || '').trim().toLowerCase();
         const aptName = String(data.aptName || '').trim().toLowerCase();
 
-        console.log(`[Leads POST] Searching for row to update: Recommender="${recommender}", Apt="${aptName}"`);
+        // 헤더 인덱스 찾기
+        const recommenderIdx = h.findIndex(name => name.includes('추천인'));
+        const aptNameIdx = h.findIndex(name => name.includes('아파트명'));
+        const reservedIdx = h.findIndex(name => name.includes('예약완료'));
+        const completedIdx = h.findIndex(name => name.includes('시공완료'));
+        const salesIdx = h.findIndex(name => name.includes('매출액'));
+        const incentiveIdx = h.findIndex(name => name.includes('인센티브'));
+        const settleIdx = h.findIndex(name => name.includes('정산'));
 
-        // 1. 기존 '예약완료' 행 찾기
+        console.log(`[Leads POST] Processing update for: ${recommender} - ${aptName}`);
+
+        // 1. 기존 '예약완료' && '시공 미완료' 행 찾기
         const targetRow = [...rows].reverse().find(r => {
-            const rName = String(r.get(h[3]) || '').trim().toLowerCase();
-            const rApt = String(r.get(h[4]) || '').trim().toLowerCase();
+            const rName = String(r.get(h[recommenderIdx]) || '').trim().toLowerCase();
+            const rApt = String(r.get(h[aptNameIdx]) || '').trim().toLowerCase();
 
-            const bookVal = r.get(h[8]);
-            const compVal = r.get(h[9]);
+            const bookVal = r.get(h[reservedIdx]);
+            const compVal = completedIdx !== -1 ? r.get(h[completedIdx]) : false;
 
-            const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
-            const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
+            const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE' || String(bookVal) === '1';
+            const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE' || String(compVal) === '1';
 
             return rName === recommender && rApt === aptName && isBooked && !isCompleted;
         });
 
         if (targetRow) {
-            // 기존 행 업데이트
-            if (h[9]) targetRow.set(h[9], true); // 시공완료 체크박스
-            if (h[10]) targetRow.set(h[10], data.saleAmount || 0); // 판매비용
-            if (h[11]) targetRow.set(h[11], 20000); // 인센티브
-            if (h[12]) targetRow.set(h[12], '미정산'); // 정산상태
+            // 기존 행 업데이트 (덮어쓰기)
+            if (completedIdx !== -1) targetRow.set(h[completedIdx], true);
+            if (salesIdx !== -1) targetRow.set(h[salesIdx], data.saleAmount || 0);
+            if (incentiveIdx !== -1) targetRow.set(h[incentiveIdx], 20000);
+            if (settleIdx !== -1) targetRow.set(h[settleIdx], '미정산');
 
             await targetRow.save();
+            console.log(`[Leads POST] Row successfully updated`);
             return NextResponse.json({ success: true, mode: 'updated' });
         } else {
-            // 일치하는 행이 없으면 새로 추가 (Fallback)
-            const rowData: Record<string, any> = {};
-            if (h[0]) rowData[h[0]] = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }).replace(/\. /g, '.').replace(/\.$/, '');
-            if (h[1]) rowData[h[1]] = data.source || '현장시공';
-            if (h[2]) rowData[h[2]] = data.area || '';
-            if (h[3]) rowData[h[3]] = data.recommender || '본사';
-            if (h[4]) rowData[h[4]] = data.aptName || '';
-            if (h[5]) rowData[h[5]] = data.pyeong || '';
-            if (h[6]) rowData[h[6]] = data.scope || '';
-            if (h[7]) rowData[h[7]] = '시공완료';
-            if (h[8]) rowData[h[8]] = true;
-            if (h[9]) rowData[h[9]] = true;
-            if (h[10]) rowData[h[10]] = data.saleAmount || 0;
-            if (h[11]) rowData[h[11]] = 20000;
-            if (h[12]) rowData[h[12]] = '미정산';
-
-            const newRow = await sheet.addRow(rowData);
-
-            // 체크박스 속성 부여
-            try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await (sheet as any)._makeSingleUpdateRequest('setDataValidation', {
-                    range: {
-                        sheetId: sheet.sheetId,
-                        startRowIndex: newRow.rowNumber - 1,
-                        endRowIndex: newRow.rowNumber,
-                        startColumnIndex: 8,
-                        endColumnIndex: 10
-                    },
-                    rule: { condition: { type: 'BOOLEAN' }, showCustomUi: true }
-                });
-            } catch (e) {
-                console.error('DataValidation error:', e);
-            }
-
-            return NextResponse.json({ success: true, mode: 'inserted' });
+            console.warn(`[Leads POST] No matching reservation row found. Re-inserting logic skipped for data integrity.`);
+            return NextResponse.json({
+                success: false,
+                error: '일치하는 예약 내역이 없습니다. 예약이 완료된 아파트만 시공 보고서 작성이 가능합니다.'
+            }, { status: 400 });
         }
     } catch (error: any) {
         console.error('Leads POST error:', error);

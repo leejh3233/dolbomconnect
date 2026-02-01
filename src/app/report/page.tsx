@@ -107,7 +107,7 @@ export default function ReportPage() {
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbzITllVlYaPqmfoT7eVPd1nSDl31uiaQFO9VFILQeBo_swAUNScMOKM_F_c9iz7TbKI/exec";
 
         try {
-            // 1. 엑셀 시트 전송 (Apps Script)
+            // 1. 엑셀 시트 전송 (Apps Script - 시공보고서 기록용)
             fetch(appsScriptUrl, {
                 method: "POST",
                 mode: "no-cors",
@@ -119,9 +119,9 @@ export default function ReportPage() {
                 headers: { "Content-Type": "application/json" },
             });
 
-            // 2. 인센티브 시트 연동
+            // 2. 인센티브 시트 연동 (기존 예약 내역 업데이트용)
             if (form.추천인 && form.추천인 !== "없음") {
-                await fetch(`${backendUrl}/api/leads`, {
+                const response = await fetch(`${backendUrl}/api/leads`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -134,11 +134,16 @@ export default function ReportPage() {
                         source: "현장시공"
                     })
                 });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    throw new Error(result.error || "인센티브 시트 연동 중 오류가 발생했습니다.");
+                }
             }
 
             alert("시공보고서 전송이 완료되었습니다!");
-        } catch (e) {
-            alert("전송 중 오류가 발생했습니다.");
+        } catch (e: any) {
+            alert(e.message || "전송 중 오류가 발생했습니다.");
         }
     };
 
@@ -185,8 +190,8 @@ export default function ReportPage() {
                         disabled={!isAptEnabled}
                         placeholder={isAptEnabled ? "아파트명을 입력하거나 목록에서 선택하세요" : "추천인을 먼저 선택하세요"}
                         className={`w-full border-2 p-3 rounded-lg outline-none transition-all ${!isAptEnabled
-                                ? "bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400"
-                                : "bg-white border-gray-200 focus:border-blue-500 text-gray-800"
+                            ? "bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400"
+                            : "bg-white border-gray-200 focus:border-blue-500 text-gray-800"
                             }`}
                     />
                     <datalist id="apt-list">

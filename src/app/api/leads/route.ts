@@ -1,41 +1,99 @@
+// Final deployment trigger for D-column and CORS fix
 import { NextResponse } from 'next/server';
 import { getSpreadsheet } from '@/lib/google-sheets';
+
+const CORS_HEADERS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+export async function GET(request: Request) {
+    try {
+        const { searchParams } = new URL(request.url);
+        const type = searchParams.get('type');
+        const recommender = searchParams.get('recommender');
+
+        const doc = await getSpreadsheet();
+        const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
+
+        await sheet.loadHeaderRow();
+        const rows = await sheet.getRows();
+        const lh = sheet.headerValues;
+
+        if (type === 'partners') {
+            // D열(index 3)에서 추천인 목록 추출
+            const partnerNames = Array.from(new Set(
+                rows
+                    .map(row => row.get(lh[3]))
+                    .filter(name => name && String(name).trim() !== '')
+                    .map(name => String(name).trim())
+            )).sort();
+            return NextResponse.json({ partners: partnerNames }, { headers: CORS_HEADERS });
+        }
+
+        if (type === 'apartments' && recommender) {
+            const apartments = rows
+                .filter(r => {
+                    const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
+                    const isBooked = String(r.get(lh[8])).toUpperCase() === 'TRUE';
+                    const isCompleted = String(r.get(lh[9])).toUpperCase() === 'TRUE';
+                    return rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+                })
+                .map(r => ({
+                    aptName: String(r.get(lh[4]) || '').trim(),
+                    dong: String(r.get(lh[5]) || '').trim(),
+                    contact: String(r.get(lh[6]) || '').trim(),
+                    pyeong: String(r.get(lh[7]) || '').trim(),
+                    saleAmount: String(r.get(lh[10]) || '').trim(),
+                }))
+                .filter((item, index, self) =>
+                    item.aptName !== '' &&
+                    self.findIndex(t => t.aptName === item.aptName) === index
+                );
+            return NextResponse.json({ apartments }, { headers: CORS_HEADERS });
+        }
+
+        return NextResponse.json({
+            status: "ok",
+            message: "Leads API active",
+            timestamp: new Date().toISOString()
+        }, { headers: CORS_HEADERS });
+    } catch (error: any) {
+        console.error('Leads GET error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+    }
+}
 
 export async function POST(request: Request) {
     try {
         const data = await request.json();
-        console.log('Received lead data:', data);
-
         const doc = await getSpreadsheet();
-        const sheet = doc.sheetsByIndex[0];
+        const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
         await sheet.loadHeaderRow();
         const h = sheet.headerValues;
 
-        console.log(`[Leads POST] Saving to sheet: [${sheet.index}] ${sheet.title}. Headers:`, h);
-
-
-        // Map data to headers by their position (Index based)
-        // 0:날짜, 1:유입경로, 2:지역, 3:추천인, 4:아파트명, 5:평수, 6:시공범위, 7:상태, 8:예약완료, 9:시공완료...
         const rowData: Record<string, any> = {};
         if (h[0]) rowData[h[0]] = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }).replace(/\. /g, '.').replace(/\.$/, '');
-        if (h[1]) rowData[h[1]] = data.source || '직접유입';
-        if (h[2]) rowData[h[2]] = data.area;
-        if (h[3]) rowData[h[3]] = data.empId || '본사';
-        if (h[4]) rowData[h[4]] = data.aptName;
-        if (h[5]) rowData[h[5]] = data.pyeong;
-        if (h[6]) rowData[h[6]] = data.scope;
-        if (h[7]) rowData[h[7]] = '상담대기';
-        if (h[8]) rowData[h[8]] = false;
-        if (h[9]) rowData[h[9]] = false;
-        if (h[10]) rowData[h[10]] = 0;
+        if (h[1]) rowData[h[1]] = data.source || '현장시공';
+        if (h[2]) rowData[h[2]] = data.area || '';
+        if (h[3]) rowData[h[3]] = data.recommender || '본사';
+        if (h[4]) rowData[h[4]] = data.aptName || '';
+        if (h[5]) rowData[h[5]] = data.pyeong || '';
+        if (h[6]) rowData[h[6]] = data.scope || '';
+        if (h[7]) rowData[h[7]] = '시공완료';
+        if (h[8]) rowData[h[8]] = true;
+        if (h[9]) rowData[h[9]] = true;
+        if (h[10]) rowData[h[10]] = data.saleAmount || 0;
         if (h[11]) rowData[h[11]] = 0;
         if (h[12]) rowData[h[12]] = '미정산';
 
         const newRow = await sheet.addRow(rowData);
-
-        // Force Checkbox Validation using raw API request (Node library workaround)
-        // I (index 8) and J (index 9)
-        const rowIndex = newRow.rowNumber - 1; // 0-based index derived from 1-based rowNumber
+        const rowIndex = newRow.rowNumber - 1;
 
         try {
             // @ts-ignore
@@ -45,28 +103,17 @@ export async function POST(request: Request) {
                     startRowIndex: rowIndex,
                     endRowIndex: rowIndex + 1,
                     startColumnIndex: 8,
-                    endColumnIndex: 10 // Exclusive end, covers 8 and 9
+                    endColumnIndex: 10
                 },
-                rule: {
-                    condition: {
-                        type: 'BOOLEAN',
-                    },
-                    showCustomUi: true
-                }
+                rule: { condition: { type: 'BOOLEAN' }, showCustomUi: true }
             });
         } catch (e) {
             console.error('Failed to set checkbox validation:', e);
         }
 
-        // Value is already set to false by addRow using rowData
-
-
-
-        return NextResponse.json({ success: true });
-
+        return NextResponse.json({ success: true }, { headers: CORS_HEADERS });
     } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('Leads POST error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
     }
 }
-
-

@@ -32,12 +32,17 @@ export async function getSpreadsheet() {
     // 2. Fallback to Env variables (Legacy/Cloud)
     const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
     const rawKey = process.env.GOOGLE_PRIVATE_KEY || '';
-
-    if (!serviceAccountEmail || !rawKey || !spreadsheetId) {
-        throw new Error('Google Sheets credentials are missing (No JSON file or Env variables).');
-    }
-
     const privateKey = rawKey.replace(/\\n/g, '\n').replace(/^["']|["']$/g, '');
+
+    if (!spreadsheetId) {
+        throw new Error('GOOGLE_SHEET_ID is missing.');
+    }
+    if (!serviceAccountEmail) {
+        throw new Error('GOOGLE_SERVICE_ACCOUNT_EMAIL is missing.');
+    }
+    if (!privateKey) {
+        throw new Error('GOOGLE_PRIVATE_KEY is missing.');
+    }
 
     const jwt = new JWT({
         email: serviceAccountEmail,

@@ -240,7 +240,7 @@ export default function AdminPage() {
         const mOk = (filters.month === 'ALL' || l.fullMonth === filters.month);
         let sOk = false;
         if (filters.status === 'ALL') sOk = true;
-        else if (filters.status === '예약완료') sOk = (l.isBooking === true);
+        else if (filters.status === '예약완료') sOk = (l.isBooking === true && !l.isCompleted);
         else if (filters.status === '시공완료') sOk = (l.isCompleted === true);
         else if (filters.status === '상담대기') sOk = (!l.isBooking && !l.isCompleted);
         else sOk = String(l.status || "").includes(filters.status);

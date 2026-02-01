@@ -148,8 +148,8 @@ export default function ReportPage() {
         }
     };
 
-    // 아파트명 입력란 활성화 조건: 추천인이 "없음"이 아니고 비어있지 않을 때
-    const isAptEnabled = form.추천인 && form.추천인 !== "없음" && form.추천인.trim() !== "";
+    // 아파트명 입력란 활성화 조건: 추천인이 비어있지 않거나 "없음"일 때
+    const isAptEnabled = form.추천인.trim() !== "";
 
     return (
         <main className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-xl my-8">
@@ -170,7 +170,7 @@ export default function ReportPage() {
                         onChange={handleChange}
                         list="partner-list"
                         autoComplete="off"
-                        placeholder="추천인 이름을 입력하세요"
+                        placeholder="추천인 이름을 입력하세요 (없으면 '없음' 입력)"
                         className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all"
                     />
                     <datalist id="partner-list">
@@ -180,7 +180,7 @@ export default function ReportPage() {
 
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        5. 아파트명 {isLoading && <span className="text-blue-500 text-xs animate-pulse">(목록 로딩 중...)</span>}
+                        5. 아파트명 {isLoading && <span className="text-blue-500 text-xs animate-pulse">(로딩 중...)</span>}
                     </label>
                     <input
                         type="text"
@@ -189,7 +189,7 @@ export default function ReportPage() {
                         onChange={handleChange}
                         list="apt-list"
                         disabled={!isAptEnabled}
-                        placeholder={isAptEnabled ? "아파트명을 입력하거나 목록에서 선택하세요" : "추천인을 먼저 선택하세요"}
+                        placeholder={isAptEnabled ? "아파트명을 입력하거나 선택하세요" : "추천인을 먼저 입력하세요"}
                         className={`w-full border-2 p-3 rounded-lg outline-none transition-all ${!isAptEnabled
                             ? "bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400"
                             : "bg-white border-gray-200 focus:border-blue-500 text-gray-800"
@@ -200,7 +200,7 @@ export default function ReportPage() {
                             <option key={idx} value={apt.aptName} />
                         ))}
                     </datalist>
-                    {isAptEnabled && !isLoading && aptList.length === 0 && (
+                    {isAptEnabled && form.추천인 !== "없음" && !isLoading && aptList.length === 0 && form.추천인.trim().length >= 2 && (
                         <p className="text-[10px] text-red-400 mt-1 ml-1">* 해당 추천인으로 '예약완료'된 아파트가 확인되지 않습니다.</p>
                     )}
                 </div>

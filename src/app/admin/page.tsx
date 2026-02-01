@@ -11,7 +11,8 @@ export default function AdminPage() {
     const [masterData, setMasterData] = useState<any>(null);
     const [filters, setFilters] = useState({
         month: 'ALL',
-        status: 'ALL'
+        status: 'ALL',
+        partner: 'ALL'
     });
     // Settlement Tab Filters
     const [settleMonth, setSettleMonth] = useState('ALL');
@@ -238,13 +239,14 @@ export default function AdminPage() {
     // Filter logic
     const filteredLeads = masterData?.leads?.filter((l: any) => {
         const mOk = (filters.month === 'ALL' || l.fullMonth === filters.month);
+        const pOk = (filters.partner === 'ALL' || l.partner === filters.partner);
         let sOk = false;
         if (filters.status === 'ALL') sOk = true;
         else if (filters.status === '예약완료') sOk = (l.isBooking === true && !l.isCompleted);
         else if (filters.status === '시공완료') sOk = (l.isCompleted === true);
         else if (filters.status === '상담대기') sOk = (!l.isBooking && !l.isCompleted);
         else sOk = String(l.status || "").includes(filters.status);
-        return mOk && sOk;
+        return mOk && pOk && sOk;
     }) || [];
 
     if (!isLoggedIn) {
@@ -342,6 +344,19 @@ export default function AdminPage() {
                                         .sort().reverse()
                                         .map(m => (
                                             <option key={m} value={m}>{formatMonth(m)}</option>
+                                        ))}
+                                </select>
+                                <select
+                                    value={filters.partner}
+                                    onChange={(e) => setFilters({ ...filters, partner: e.target.value })}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl px-3 py-1.5 text-[11px] font-black outline-none"
+                                >
+                                    <option value="ALL">전체 파트너</option>
+                                    {[...new Set(masterData?.leads?.map((l: any) => l.partner) as string[] || [])]
+                                        .filter(Boolean)
+                                        .sort()
+                                        .map(p => (
+                                            <option key={p} value={p}>{p}</option>
                                         ))}
                                 </select>
                                 <select

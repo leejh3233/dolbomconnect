@@ -5,11 +5,20 @@ export const dynamic = 'force-dynamic';
 
 
 
+const normalizeStr = (s: any) => String(s || '').trim().normalize('NFC').toLowerCase();
+
+const isTrue = (val: any) => {
+    if (val === true || val === 1 || val === '1') return true;
+    const s = normalizeStr(val).toUpperCase();
+    // 한국어 환경에서 흔히 쓰이는 체크 표시들 (V, O, X, 1, TRUE 등)
+    return ['TRUE', '1', 'V', 'CHECKED', 'O', 'YES', 'Y', 'X'].includes(s);
+};
+
 export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type');
-        const recommender = searchParams.get('recommender');
+        const recommender = normalizeStr(searchParams.get('recommender'));
 
         const doc = await getSpreadsheet();
         const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
@@ -18,74 +27,59 @@ export async function GET(request: NextRequest) {
         const rows = await sheet.getRows();
         const lh = sheet.headerValues;
 
-        // 헬퍼: 다양한 형태의 TRUE 값을 판별
-        const isTrue = (val: any) => {
-            if (val === true || val === 1) return true;
-            const s = String(val || '').trim().toUpperCase();
-            return s === 'TRUE' || s === '1' || s === 'V' || s === 'CHECKED' || s === 'O' || s === 'TRUE';
+        // 헤더 인덱스 찾기 함수
+        const getColIdx = (names: string[]) => {
+            const idx = lh.findIndex(h => names.some(n => normalizeStr(h).includes(normalizeStr(n))));
+            return idx;
         };
 
-        if (type === 'partners') {
-            const rIdx = lh.findIndex(h => h.trim() === '추천인');
-            const targetIdx = rIdx !== -1 ? rIdx : lh.findIndex(h => h.includes('추천인'));
-            const finalIdx = targetIdx !== -1 ? targetIdx : 3;
+        const rIdx = getColIdx(['추천인']);
+        const aIdx = getColIdx(['아파트명', '아파트']);
+        const bIdx = getColIdx(['예약완료', '예약']);
+        const cIdx = getColIdx(['시공완료', '시공']);
 
+        if (type === 'partners') {
+            const targetIdx = rIdx !== -1 ? rIdx : 3;
             const partnerNames = Array.from(new Set(
                 rows
-                    .map(row => row.get(lh[finalIdx]))
-                    .filter(name => name && String(name).trim() !== '')
-                    .map(name => String(name).trim())
+                    .map(row => String(row.get(lh[targetIdx]) || '').trim())
+                    .filter(name => name !== '')
             )).sort();
             return NextResponse.json({ partners: partnerNames });
         }
 
         if (type === 'apartments' && recommender) {
-            console.log(`[Leads API] Fetching apartments for recommender: "${recommender}"`);
+            console.log(`[Leads API] Fetching for: "${recommender}"`);
 
-            const rIdx = lh.findIndex(h => h.trim() === '추천인');
-            const aIdx = lh.findIndex(h => h.trim() === '아파트명');
-            const bIdx = lh.findIndex(h => h.trim() === '예약완료');
-            const cIdx = lh.findIndex(h => h.trim() === '시공완료');
-
-            // 정확한 매칭 안될 시 유사 검색 시도
-            const findIdx = (names: string[]) => lh.findIndex(h => names.some(n => h.includes(n)));
-            const finalRIdx = rIdx !== -1 ? rIdx : findIdx(['추천인']);
-            const finalAIdx = aIdx !== -1 ? aIdx : findIdx(['아파트명']);
-            const finalBIdx = bIdx !== -1 ? bIdx : findIdx(['예약완료', '예약']);
-            const finalCIdx = cIdx !== -1 ? cIdx : findIdx(['시공완료', '시공']);
-
-            if (finalRIdx === -1 || finalAIdx === -1 || finalBIdx === -1) {
-                console.error(`[Leads API] Header mismatch. Headers:`, lh);
-                return NextResponse.json({ apartments: [], error: 'Sheet header error' });
+            if (rIdx === -1 || aIdx === -1 || bIdx === -1) {
+                console.error(`[Leads API] Header missing. Headers:`, lh);
+                return NextResponse.json({ apartments: [], error: 'Sheet header structure mismatch' });
             }
 
             const apartments = rows
                 .filter(r => {
-                    const rowRecommender = String(r.get(lh[finalRIdx]) || '').trim().toLowerCase();
-                    const bookVal = r.get(lh[finalBIdx]);
-                    const compVal = finalCIdx !== -1 ? r.get(lh[finalCIdx]) : false;
+                    const rowRecommender = normalizeStr(r.get(lh[rIdx]));
+                    const isBooked = isTrue(r.get(lh[bIdx]));
+                    const isCompleted = cIdx !== -1 ? isTrue(r.get(lh[cIdx])) : false;
 
-                    const isBooked = isTrue(bookVal);
-                    const isCompleted = isTrue(compVal);
+                    // 추천인 일치 AND 예약완료 AND !시공완료
+                    const match = rowRecommender === recommender && isBooked && !isCompleted;
 
-                    // 추천인은 일치하고, 예약은 되었으며, 아직 시공은 안 된 내역만 매칭
-                    const isMatch = rowRecommender === recommender.trim().toLowerCase() && isBooked && !isCompleted;
-
-                    if (rowRecommender === recommender.trim().toLowerCase()) {
-                        console.log(`[Leads API] Debug Row: Apt="${r.get(lh[finalAIdx])}", Booked=${isBooked}, Comp=${isCompleted}, Match=${isMatch}`);
+                    if (rowRecommender === recommender) {
+                        console.log(`[Leads API] Row: ${r.get(lh[aIdx])}, Booked=${isBooked}, Comp=${isCompleted}, Result=${match}`);
                     }
 
-                    return isMatch;
+                    return match;
                 })
                 .map(r => ({
-                    aptName: String(r.get(lh[finalAIdx]) || '').trim()
+                    aptName: String(r.get(lh[aIdx]) || '').trim()
                 }))
                 .filter((item, index, self) =>
                     item.aptName !== '' &&
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
 
-            console.log(`[Leads API] Returning ${apartments.length} available apartments`);
+            console.log(`[Leads API] Found ${apartments.length} matching apartments for ${recommender}`);
             return NextResponse.json({ apartments });
         }
 
@@ -99,39 +93,30 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
+        const recommender = normalizeStr(data.recommender);
+        const aptName = normalizeStr(data.aptName);
+
         const doc = await getSpreadsheet();
         const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
         await sheet.loadHeaderRow();
         const h = sheet.headerValues;
         const rows = await sheet.getRows();
 
-        const recommender = String(data.recommender || '').trim().toLowerCase();
-        const aptName = String(data.aptName || '').trim().toLowerCase();
+        const getColIdx = (names: string[]) => h.findIndex(name => names.some(n => normalizeStr(name).includes(normalizeStr(n))));
 
-        // 헬퍼: 다양한 형태의 TRUE 값을 판별
-        const isTrue = (val: any) => {
-            if (val === true || val === 1) return true;
-            const s = String(val || '').trim().toUpperCase();
-            return s === 'TRUE' || s === '1' || s === 'V' || s === 'CHECKED' || s === 'O';
-        };
+        const rIdx = getColIdx(['추천인']);
+        const aIdx = getColIdx(['아파트명', '아파트']);
+        const bIdx = getColIdx(['예약완료', '예약']);
+        const cIdx = getColIdx(['시공완료', '시공']);
+        const salesIdx = getColIdx(['매출액', '판매금액']);
+        const incentiveIdx = getColIdx(['인센티브']);
+        const settleIdx = getColIdx(['정산']);
 
-        // 헤더 인덱스 검색 (유연하게)
-        const findIdx = (names: string[]) => h.findIndex(name => names.some(n => name.includes(n)));
-        const rIdx = findIdx(['추천인']);
-        const aIdx = findIdx(['아파트명']);
-        const bIdx = findIdx(['예약완료']);
-        const cIdx = findIdx(['시공완료']);
-        const salesIdx = findIdx(['매출액']);
-        const incentiveIdx = findIdx(['인센티브']);
-        const settleIdx = findIdx(['정산']);
+        console.log(`[Leads POST] Searching update target: ${recommender} - ${aptName}`);
 
-        console.log(`[Leads POST] Searching for match: ${recommender} / ${aptName}`);
-
-        // 1. 기존 '예약완료' && '시공 미완료' 행 찾기
         const targetRow = [...rows].reverse().find(r => {
-            const rowRecommender = String(r.get(h[rIdx]) || '').trim().toLowerCase();
-            const rowApt = String(r.get(h[aIdx]) || '').trim().toLowerCase();
-
+            const rowRecommender = normalizeStr(r.get(h[rIdx]));
+            const rowApt = normalizeStr(r.get(h[aIdx]));
             const isBooked = isTrue(r.get(h[bIdx]));
             const isCompleted = cIdx !== -1 ? isTrue(r.get(h[cIdx])) : false;
 
@@ -139,17 +124,15 @@ export async function POST(request: NextRequest) {
         });
 
         if (targetRow) {
-            // 기존 행 업데이트
             if (cIdx !== -1) targetRow.set(h[cIdx], true);
             if (salesIdx !== -1) targetRow.set(h[salesIdx], data.saleAmount || 0);
             if (incentiveIdx !== -1) targetRow.set(h[incentiveIdx], 20000);
             if (settleIdx !== -1) targetRow.set(h[settleIdx], '미정산');
 
             await targetRow.save();
-            console.log(`[Leads POST] Successfully updated row`);
             return NextResponse.json({ success: true, mode: 'updated' });
         } else {
-            console.warn(`[Leads POST] No match found for update logic`);
+            console.warn(`[Leads POST] Match not found for update`);
             return NextResponse.json({
                 success: false,
                 error: '일치하는 예약 내역이 없습니다. 시트에서 해당 아파트가 [예약완료]에 체크되어 있고, [시공완료]는 비어 있는지 확인해 주세요.'

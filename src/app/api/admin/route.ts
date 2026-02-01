@@ -19,15 +19,26 @@ export async function GET() {
         const ph = partnersSheet.headerValues;
         const partnerRows = await partnersSheet.getRows();
 
-        console.log(`[Admin GET] Partners Sheet: ${partnersSheet.title}, Rows: ${partnerRows.length}, Headers:`, ph);
+        // Helper to find column header by name
+        const getColName = (possibleNames: string[], defaultIdx: number) => {
+            const found = ph.find(header =>
+                possibleNames.some(name => header.toLowerCase().includes(name.toLowerCase()))
+            );
+            return found || ph[defaultIdx];
+        };
 
+        const pNameH = getColName(['이름', 'PartnerName', '성함'], 0);
+        const pTypeH = getColName(['유형', 'Type', '영업구분'], 4);
+        const pStatusH = getColName(['상태', 'Status'], 7);
+        const pBankH = getColName(['은행', 'BankName', '은행명'], 2);
+        const pAccH = getColName(['계좌번호', 'Account', '계좌'], 3);
 
         const partners = partnerRows.map(r => ({
-            name: r.get(ph[0]),
-            type: ph[4] ? r.get(ph[4]) : '인플루언서',
-            status: ph[7] ? r.get(ph[7]) : 'Active',
-            bank: ph[2] ? r.get(ph[2]) : '',
-            account: ph[3] ? r.get(ph[3]) : '',
+            name: r.get(pNameH) || '',
+            type: r.get(pTypeH) || '외부파트너',
+            status: r.get(pStatusH) || 'Active',
+            bank: r.get(pBankH) || '',
+            account: r.get(pAccH) || '',
             pendingMap: {},
             settledMap: {}
         }));
@@ -176,13 +187,43 @@ export async function POST(request: Request) {
             await sheet.loadHeaderRow();
             const h = sheet.headerValues;
 
+            const now = new Date();
+            const kstOffset = 9 * 60 * 60 * 1000;
+            const kstDate = new Date(now.getTime() + kstOffset);
+            const y = kstDate.getUTCFullYear();
+            const m = kstDate.getUTCMonth() + 1;
+            const d = kstDate.getUTCDate();
+            let hours = kstDate.getUTCHours();
+            const ampm = hours >= 12 ? '오후' : '오전';
+            hours = hours % 12 || 12;
+            const mm = String(kstDate.getUTCMinutes()).padStart(2, '0');
+            const ss = String(kstDate.getUTCSeconds()).padStart(2, '0');
+            const dateStr = `${y}. ${m}. ${d} ${ampm} ${hours}:${mm}:${ss}`;
+
             const newRow: Record<string, any> = {};
-            if (h[0]) newRow[h[0]] = name;
-            if (h[1]) newRow[h[1]] = '';
-            if (h[2]) newRow[h[2]] = '';
-            if (h[3]) newRow[h[3]] = '';
-            if (h[4]) newRow[h[4]] = type || '인플루언서';
-            if (h[7]) newRow[h[7]] = 'Active';
+            // Updated helper to be case-insensitive and partial match for better robustness
+            const getColNamePost = (possibleNames: string[], defaultIdx: number) => {
+                const found = h.find(header =>
+                    possibleNames.some(name => header.toLowerCase().includes(name.toLowerCase()))
+                );
+                return found || h[defaultIdx];
+            };
+
+            const nameHeader = getColNamePost(['이름', 'PartnerName', '성함'], 0);
+            const pwdHeader = getColNamePost(['비밀번호', 'Password'], 1);
+            const bankHeader = getColNamePost(['은행', 'BankName', '은행명'], 2);
+            const accHeader = getColNamePost(['계좌번호', 'Account', '계좌'], 3);
+            const typeHeader = getColNamePost(['유형', 'Type', '영업구분'], 4);
+            const dateHeader = getColNamePost(['등록일', 'CreatedDate', '생성일'], 6);
+            const statusHeader = getColNamePost(['상태', 'Status'], 7);
+
+            if (nameHeader) newRow[nameHeader] = name;
+            if (pwdHeader) newRow[pwdHeader] = '';
+            if (bankHeader) newRow[bankHeader] = '';
+            if (accHeader) newRow[accHeader] = '';
+            if (typeHeader) newRow[typeHeader] = type || '외부파트너';
+            if (dateHeader) newRow[dateHeader] = dateStr;
+            if (statusHeader) newRow[statusHeader] = 'Active';
 
             await sheet.addRow(newRow);
             return NextResponse.json({ success: true });

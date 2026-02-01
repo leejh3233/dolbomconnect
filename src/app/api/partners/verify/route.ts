@@ -38,14 +38,14 @@ export async function POST(request: Request) {
                         return NextResponse.json({
                             error: '비밀번호 4자리 설정이 필요합니다.',
                             isEmployee,
-                            type: sheetType || '인플루언서'
+                            type: sheetType || '외부파트너'
                         }, { status: 400 });
                     }
                     if (!isEmployee && (!bank || !account)) {
                         return NextResponse.json({
-                            error: '인플루언서는 정산용 계좌 정보가 필요합니다.',
+                            error: '외부파트너는 정산용 계좌 정보가 필요합니다.',
                             isEmployee,
-                            type: sheetType || '인플루언서'
+                            type: sheetType || '외부파트너'
                         }, { status: 400 });
                     }
 
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
                         success: true,
                         message: 'SUCCESS',
                         isEmployee,
-                        type: sheetType || '인플루언서'
+                        type: sheetType || '외부파트너'
                     });
 
                 } else {
@@ -66,13 +66,13 @@ export async function POST(request: Request) {
                             success: true,
                             message: 'LOGGED_IN',
                             isEmployee,
-                            type: sheetType || '인플루언서'
+                            type: sheetType || '외부파트너'
                         });
                     }
                     return NextResponse.json({
                         error: '비밀번호가 틀렸습니다.',
                         isEmployee,
-                        type: sheetType || '인플루언서'
+                        type: sheetType || '외부파트너'
                     }, { status: 401 });
                 }
             }

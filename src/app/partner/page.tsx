@@ -119,7 +119,7 @@ export default function PartnerPage() {
                     body.account = '';
                     body.type = '직원';
                 } else {
-                    body.type = '인플루언서';
+                    body.type = '외부파트너';
                 }
             }
 

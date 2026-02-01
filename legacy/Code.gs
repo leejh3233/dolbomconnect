@@ -157,21 +157,39 @@ function getAdminData() {
   var partnerRows = ss.getSheetByName("Partners").getDataRange().getValues();
   
   var partners = [];
+  var ph = partnerRows[0]; // Header row
+
+  // Helper to find column index by header name
+  var getColIdx = function(possibleNames, defaultIdx) {
+    for (var j = 0; j < ph.length; j++) {
+      var header = String(ph[j]).toLowerCase();
+      if (possibleNames.some(function(name) { return header.indexOf(name.toLowerCase()) !== -1; })) return j;
+    }
+    return defaultIdx;
+  };
+
+  var nameIdx = getColIdx(['이름', 'PartnerName', '성함'], 0);
+  var typeIdx = getColIdx(['유형', 'Type', '영업구분'], 4);
+  var statusIdx = getColIdx(['상태', 'Status'], 7);
+  var bankIdx = getColIdx(['은행', 'BankName', '은행명'], 2);
+  var accIdx = getColIdx(['계좌번호', 'Account', '계좌'], 3);
+
   partnerRows.slice(1).forEach(r => {
     partners.push({ 
-      name: r[0], 
-      type: r[4] || "인플루언서", 
-      status: r[7] || "Active", 
-      bank: r[2], 
-      account: r[3], 
+      name: r[nameIdx] || "", 
+      type: r[typeIdx] || "외부파트너", 
+      status: r[statusIdx] || "Active", 
+      bank: r[bankIdx] || "", 
+      account: r[accIdx] || "", 
       pendingMap: {},
-      settledMap: {} // [V13.3] 정산 완료 내역 추적 추가
+      settledMap: {} 
     });
   });
 
   var leadData = [];
   var globalTotalSettled = 0;
   var globalTotalPending = 0;
+  var ph = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Partners").getRowElements()[0]; // Just to get headers if needed, but indices are used below
   
   leads.slice(1).forEach((r, i) => {
     var isComp = (r[9] === true || String(r[9]).toLowerCase() === "true");
@@ -351,7 +369,7 @@ function verifyOrRegisterPartner(n, p, b, a) {
       if (sheetPwd === "") {
         if (!inputPwd || inputPwd.length !== 4) throw new Error("비밀번호 4자리 설정이 필요합니다.");
         // [V13.0] 직원은 계좌 정보가 없어도 등록 가능
-        if (!isEmployee && (!b || !a)) throw new Error("인플루언서는 정산용 계좌 정보가 필요합니다.");
+        if (!isEmployee && (!b || !a)) throw new Error("외부파트너는 정산용 계좌 정보가 필요합니다.");
         sheet.getRange(i+1, 2, 1, 3).setValues([[inputPwd, b||"", a||""]]);
         return "SUCCESS";
       } else {
@@ -387,7 +405,29 @@ function getPartnerAccount(n) {
 function adminPreRegisterPartner(n, t) {
   initSheets();
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Partners");
-  sheet.appendRow([n, "", "", "", t, "", new Date(), "Active"]);
+  var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  // Helper to find column index by header name
+  var getColIdx = function(name) {
+    for (var i = 0; i < headers.length; i++) {
+      if (String(headers[i]).indexOf(name) !== -1) return i + 1;
+    }
+    return -1;
+  };
+
+  var row = sheet.getLastRow() + 1;
+  // Initialize with empty columns
+  sheet.appendRow(new Array(headers.length).fill(""));
+  
+  var nIdx = getColIdx("이름"); if (nIdx !== -1) sheet.getRange(row, nIdx).setValue(n);
+  var tIdx = getColIdx("유형"); if (tIdx === -1) tIdx = getColIdx("영업구분");
+  if (tIdx !== -1) sheet.getRange(row, tIdx).setValue(t || "외부파트너");
+  
+  var dIdx = getColIdx("등록일"); if (dIdx === -1) dIdx = getColIdx("CreatedDate");
+  if (dIdx !== -1) sheet.getRange(row, dIdx).setValue(new Date());
+  
+  var sIdx = getColIdx("상태"); if (sIdx !== -1) sheet.getRange(row, sIdx).setValue("Active");
+  
   return "OK";
 }
 
@@ -411,7 +451,7 @@ function updatePartnerProfile(name, oldPwd, newPwd, bank, account) {
         sheet.getRange(i + 1, 2).setValue(String(newPwd).trim());
       }
       
-      // 인플루언서인 경우만 계좌 정보 업데이트 (또는 구분 없이 업데이트 가능하도록 허용)
+      // 외부파트너인 경우만 계좌 정보 업데이트 (또는 구분 없이 업데이트 가능하도록 허용)
       if (bank !== undefined) sheet.getRange(i + 1, 3).setValue(bank);
       if (account !== undefined) sheet.getRange(i + 1, 4).setValue(account);
       

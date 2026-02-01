@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'apartments' && recommender) {
-            console.log(`[Leads API] DEBUG: Recommender="${recommender}"`);
             const apartments = rows
                 .filter(r => {
                     const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
@@ -47,30 +46,17 @@ export async function GET(request: NextRequest) {
                     const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
                     const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
 
-                    // 디버깅: 추천인 이름만 일치해도 로그 출력
-                    if (rName === recommender.trim().toLowerCase()) {
-                        console.log(`[Leads API] Found row for ${recommender}: Apt=${r.get(lh[4])}, Booked=${isBooked}, Comp=${isCompleted}`);
-                    }
-
-                    // 일단 예약만 되어 있으면 다 보여주도록 완화 (테스트용)
-                    return rName === recommender.trim().toLowerCase() && isBooked;
+                    // 추천인이 일치하고 예약은 되었으며 시공은 안 된 항목만 추출
+                    return rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
                 })
                 .map(r => ({
-                    aptName: String(r.get(lh[4]) || '').trim(),
-                    isCompleted: r.get(lh[9]) === true || String(r.get(lh[9])).toUpperCase() === 'TRUE'
+                    aptName: String(r.get(lh[4]) || '').trim()
                 }))
                 .filter((item, index, self) =>
                     item.aptName !== '' &&
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
-            return NextResponse.json({
-                apartments,
-                debug: {
-                    recommender,
-                    rowCount: rows.length,
-                    headers: [lh[3], lh[4], lh[8], lh[9]]
-                }
-            }, { headers: CORS_HEADERS });
+            return NextResponse.json({ apartments }, { headers: CORS_HEADERS });
         }
 
         return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });

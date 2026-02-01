@@ -42,10 +42,11 @@ export default function ReportPage() {
             .catch(err => console.error("추천인 로드 실패:", err));
     }, [backendUrl]);
 
-    // 2. 추천인 선택 시 아파트 목록 가져오기
+    // 2. 추천인 입력 시 아파트 목록 즉시 가져오기 (타이핑 대응)
     useEffect(() => {
         const recommender = form.추천인.trim();
-        if (recommender && recommender !== "없음" && recommender !== "") {
+        // 2글자 이상 입력되었을 때만 검색 (성능 및 정확도)
+        if (recommender.length >= 2 && recommender !== "없음") {
             setIsLoading(true);
             fetch(`${backendUrl}/api/leads?type=apartments&recommender=${encodeURIComponent(recommender)}`)
                 .then(res => res.json())

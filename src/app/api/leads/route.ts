@@ -30,35 +30,44 @@ export async function GET(request: NextRequest) {
 
         if (type === 'apartments' && recommender) {
             console.log(`[Leads API] Fetching apartments for recommender: "${recommender}"`);
-            console.log(`[Leads API] Headers found:`, lh);
+
+            // 헤더 인덱스 찾기 (안전을 위해 이름으로 검색)
+            const recommenderIdx = lh.findIndex(h => h.includes('추천인'));
+            const aptNameIdx = lh.findIndex(h => h.includes('아파트명'));
+            const reservedIdx = lh.findIndex(h => h.includes('예약완료'));
+
+            console.log(`[Leads API] Column Indices - Recommender: ${recommenderIdx}, Apt: ${aptNameIdx}, Reserved: ${reservedIdx}`);
+
+            if (recommenderIdx === -1 || aptNameIdx === -1 || reservedIdx === -1) {
+                console.error(`[Leads API] Required columns not found. Headers:`, lh);
+                return NextResponse.json({ apartments: [], error: 'Sheet structure error' });
+            }
 
             const apartments = rows
                 .filter(r => {
-                    const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
-                    const bookVal = r.get(lh[8]);
-                    const compVal = r.get(lh[9]);
+                    const rName = String(r.get(lh[recommenderIdx]) || '').trim().toLowerCase();
+                    const bookVal = r.get(lh[reservedIdx]);
 
-                    const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
-                    const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
+                    // 체크박스 값 체크 (true, "TRUE", "checked" 등 대응)
+                    const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE' || String(bookVal) === '1';
 
-                    // 예약완료(I열)가 TRUE인 데이터만 필터링
                     const match = rName === recommender.trim().toLowerCase() && isBooked;
 
                     if (rName === recommender.trim().toLowerCase()) {
-                        console.log(`[Leads API] Row match attempt: Apt="${r.get(lh[4])}", Booked=${isBooked}, Comp=${isCompleted}, Result=${match}`);
+                        console.log(`[Leads API] Row Check: Apt="${r.get(lh[aptNameIdx])}", isBooked=${isBooked}, rawValue="${bookVal}"`);
                     }
 
                     return match;
                 })
                 .map(r => ({
-                    aptName: String(r.get(lh[4]) || '').trim()
+                    aptName: String(r.get(lh[aptNameIdx]) || '').trim()
                 }))
                 .filter((item, index, self) =>
                     item.aptName !== '' &&
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
 
-            console.log(`[Leads API] Found ${apartments.length} matching apartments`);
+            console.log(`[Leads API] Successfully found ${apartments.length} apartments`);
             return NextResponse.json({ apartments });
         }
 

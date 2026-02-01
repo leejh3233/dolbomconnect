@@ -209,6 +209,21 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
         }
 
+        if (action === 'deletePartner') {
+            const { partnerName } = body;
+            const sheet = doc.sheetsByTitle['Partners'];
+            await sheet.loadHeaderRow();
+            const h = sheet.headerValues;
+            const rows = await sheet.getRows();
+
+            const pRow = rows.find(r => r.get(h[0]) === partnerName);
+            if (pRow) {
+                await pRow.delete();
+                return NextResponse.json({ success: true });
+            }
+            return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
+        }
+
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

@@ -104,6 +104,28 @@ export default function AdminPage() {
         }
     };
 
+    const deleteMember = async (name: string) => {
+        if (!confirm(`[경고] ${name}님을 명단에서 영구적으로 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+
+        try {
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'deletePartner', partnerName: name })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(`${name}님이 명단에서 완전히 삭제되었습니다.`);
+                fetchData();
+            } else {
+                alert(data.error || '삭제 실패');
+            }
+        } catch (err) {
+            console.error('Delete failed:', err);
+            alert("삭제 중 오류가 발생했습니다.");
+        }
+    };
+
     const registerMember = async () => {
         if (!regForm.name.trim()) return alert("이름을 입력해주세요.");
         setIsRegistering(true);
@@ -591,12 +613,20 @@ export default function AdminPage() {
                                                     </span>
                                                 </td>
                                                 <td className="px-8 py-5 text-right">
-                                                    <button
-                                                        onClick={() => excludePartner(p.name, p.status)}
-                                                        className="bg-white border border-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-slate-50"
-                                                    >
-                                                        {p.status === '제외' ? '복구' : '제외 (만료)'}
-                                                    </button>
+                                                    <div className="flex gap-2 justify-end">
+                                                        <button
+                                                            onClick={() => excludePartner(p.name, p.status)}
+                                                            className="bg-white border border-slate-200 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-slate-50 transition-colors"
+                                                        >
+                                                            {p.status === '제외' ? '복구' : '제외 (만료)'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => deleteMember(p.name)}
+                                                            className="bg-red-50 border border-red-100 text-red-500 px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-red-100 transition-colors"
+                                                        >
+                                                            완전 삭제
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         )

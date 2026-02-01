@@ -1,6 +1,4 @@
-// Final deployment trigger for D-column and CORS fix
-export const dynamic = 'force-dynamic';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSpreadsheet } from '@/lib/google-sheets';
 
 const CORS_HEADERS = {
@@ -13,7 +11,7 @@ export async function OPTIONS() {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const type = searchParams.get('type');

@@ -37,13 +37,19 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'apartments' && recommender) {
+            console.log(`[Leads API] Searching apartments for recommender: "${recommender}"`);
             const apartments = rows
                 .filter(r => {
                     const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
-                    const isBooked = String(r.get(lh[8])).toUpperCase() === 'TRUE';
-                    const isCompleted = String(r.get(lh[9])).toUpperCase() === 'TRUE';
-                    // 추천인이 일치하고 예약은 되었으며 시공은 안 된 항목만 추출
-                    return rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+                    const bookVal = r.get(lh[8]);
+                    const compVal = r.get(lh[9]);
+
+                    const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
+                    const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
+
+                    const match = rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+                    if (match) console.log(`[Leads API] Found matching apartment: ${r.get(lh[4])}`);
+                    return match;
                 })
                 .map(r => ({
                     aptName: String(r.get(lh[4]) || '').trim(),
@@ -78,12 +84,19 @@ export async function POST(request: NextRequest) {
         const recommender = String(data.recommender || '').trim().toLowerCase();
         const aptName = String(data.aptName || '').trim().toLowerCase();
 
+        console.log(`[Leads POST] Searching for row to update: Recommender="${recommender}", Apt="${aptName}"`);
+
         // 1. 기존 '예약완료' 행 찾기
         const targetRow = [...rows].reverse().find(r => {
             const rName = String(r.get(h[3]) || '').trim().toLowerCase();
             const rApt = String(r.get(h[4]) || '').trim().toLowerCase();
-            const isBooked = String(r.get(h[8])).toUpperCase() === 'TRUE';
-            const isCompleted = String(r.get(h[9])).toUpperCase() === 'TRUE';
+
+            const bookVal = r.get(h[8]);
+            const compVal = r.get(h[9]);
+
+            const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
+            const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
+
             return rName === recommender && rApt === aptName && isBooked && !isCompleted;
         });
 

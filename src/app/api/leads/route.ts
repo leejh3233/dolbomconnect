@@ -3,8 +3,6 @@ import { getSpreadsheet } from '@/lib/google-sheets';
 
 export const dynamic = 'force-dynamic';
 
-
-
 const normalizeStr = (s: any) => String(s || '').trim().normalize('NFC').toLowerCase();
 
 const isTrue = (val: any) => {
@@ -98,14 +96,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const data = await request.json();
-        const recommender = normalizeStr(data.recommender);
+        const source = data.source || '';
+        const recommender = normalizeStr(data.recommender || data.empId);
         const aptName = normalizeStr(data.aptName);
 
         const doc = await getSpreadsheet();
         const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
         await sheet.loadHeaderRow();
         const h = sheet.headerValues;
-        const rows = await sheet.getRows();
 
         const getColIdx = (targetNames: string[]) => {
             const normalizedTargets = targetNames.map(n => normalizeStr(n));
@@ -122,32 +120,51 @@ export async function POST(request: NextRequest) {
         const incentiveIdx = getColIdx(['인센티브']);
         const settleIdx = getColIdx(['정산']);
 
-        console.log(`[Leads POST] Processing update: ${recommender} / ${aptName}`);
+        // 1. 현장시공 보고서인 경우: 기존 행 업데이트
+        if (source === '현장시공') {
+            const rows = await sheet.getRows();
+            console.log(`[Leads POST] Processing update: ${recommender} / ${aptName}`);
 
-        // 최신 데이터부터 검색 (역순)
-        const targetRow = [...rows].reverse().find(r => {
-            const rowRecommender = normalizeStr(r.get(h[rIdx]));
-            const rowApt = normalizeStr(r.get(h[aIdx]));
-            const isBooked = isTrue(r.get(h[bIdx]));
-            const isCompleted = cIdx !== -1 ? isTrue(r.get(h[cIdx])) : false;
+            const targetRow = [...rows].reverse().find(r => {
+                const rowRecommender = normalizeStr(r.get(h[rIdx]));
+                const rowApt = normalizeStr(r.get(h[aIdx]));
+                const isBooked = isTrue(r.get(h[bIdx]));
+                const isCompleted = cIdx !== -1 ? isTrue(r.get(h[cIdx])) : false;
+                return rowRecommender === recommender && rowApt === aptName && isBooked && !isCompleted;
+            });
 
-            return rowRecommender === recommender && rowApt === aptName && isBooked && !isCompleted;
-        });
+            if (targetRow) {
+                if (cIdx !== -1) targetRow.set(h[cIdx], true);
+                if (salesIdx !== -1) targetRow.set(h[salesIdx], data.saleAmount || 0);
+                if (incentiveIdx !== -1) targetRow.set(h[incentiveIdx], 20000);
+                if (settleIdx !== -1) targetRow.set(h[settleIdx], '미정산');
+                await targetRow.save();
+                return NextResponse.json({ success: true, mode: 'updated' });
+            } else {
+                return NextResponse.json({
+                    success: false,
+                    error: '일치하는 ' + (data.recommender || data.empId) + ' 님의 예약 내역을 찾을 수 없습니다.'
+                }, { status: 400 });
+            }
+        }
 
-        if (targetRow) {
-            if (cIdx !== -1) targetRow.set(h[cIdx], true);
-            if (salesIdx !== -1) targetRow.set(h[salesIdx], data.saleAmount || 0);
-            if (incentiveIdx !== -1) targetRow.set(h[incentiveIdx], 20000);
-            if (settleIdx !== -1) targetRow.set(h[settleIdx], '미정산');
+        // 2. 일반 고객 신청인 경우: 신규 행 추가
+        else {
+            console.log(`[Leads POST] Creating new lead row for: ${recommender}`);
+            const newRow: any = {};
+            h.forEach(header => {
+                const nh = normalizeStr(header);
+                if (nh.includes('추천인')) newRow[header] = data.recommender || data.empId || '본사';
+                else if (nh.includes('아파트')) newRow[header] = data.aptName || '';
+                else if (nh.includes('지역')) newRow[header] = data.area || '';
+                else if (nh.includes('평수')) newRow[header] = data.pyeong || '';
+                else if (nh.includes('시공범위')) newRow[header] = data.scope || '';
+                else if (nh.includes('유입경로')) newRow[header] = data.source || '직접유입';
+                else if (nh.includes('날짜') || nh.includes('일자')) newRow[header] = new Date().toISOString().slice(0, 10);
+            });
 
-            await targetRow.save();
-            return NextResponse.json({ success: true, mode: 'updated' });
-        } else {
-            console.warn(`[Leads POST] No matching row found for ${recommender} - ${aptName}`);
-            return NextResponse.json({
-                success: false,
-                error: '일치하는 ' + recommender + ' 님의 예약 내역을 찾을 수 없습니다. 시트에서 해당 아파트의 [예약완료] 칸이 체크되어 있는지 확인해주세요.'
-            }, { status: 400 });
+            await sheet.addRow(newRow);
+            return NextResponse.json({ success: true, mode: 'inserted' });
         }
     } catch (error: any) {
         console.error('Leads POST error:', error);

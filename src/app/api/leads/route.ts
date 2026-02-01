@@ -1,12 +1,7 @@
-import { NextResponse, NextRequest } from 'next/server';
-import { GoogleSpreadsheet } from 'google-spreadsheet';
-import { JWT } from 'google-auth-library';
+import { NextRequest, NextResponse } from 'next/server';
+import { getSpreadsheet } from '@/lib/google-sheets';
 
 export const dynamic = 'force-dynamic';
-
-const SPREADSHEET_ID = process.env.GOOGLE_SHEET_ID;
-const CLIENT_EMAIL = process.env.GOOGLE_CLIENT_EMAIL;
-const PRIVATE_KEY = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
 const CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
@@ -14,20 +9,8 @@ const CORS_HEADERS = {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-async function getSpreadsheet() {
-    if (!SPREADSHEET_ID || !CLIENT_EMAIL || !PRIVATE_KEY) {
-        throw new Error('Missing Google Sheet credentials');
-    }
-
-    const serviceAccountAuth = new JWT({
-        email: CLIENT_EMAIL,
-        key: PRIVATE_KEY,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-
-    const doc = new GoogleSpreadsheet(SPREADSHEET_ID, serviceAccountAuth);
-    await doc.loadInfo();
-    return doc;
+export async function OPTIONS() {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 
 export async function GET(request: NextRequest) {
@@ -87,21 +70,51 @@ export async function GET(request: NextRequest) {
     }
 }
 
-export async function POST() {
-    return NextResponse.json({ message: "Test POST success" }, {
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-        }
-    });
-}
+export async function POST(request: NextRequest) {
+    try {
+        const data = await request.json();
+        const doc = await getSpreadsheet();
+        const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
+        await sheet.loadHeaderRow();
+        const h = sheet.headerValues;
 
-export async function OPTIONS() {
-    return new Response(null, {
-        status: 204,
-        headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        const rowData: Record<string, any> = {};
+        if (h[0]) rowData[h[0]] = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }).replace(/\. /g, '.').replace(/\.$/, '');
+        if (h[1]) rowData[h[1]] = data.source || '현장시공';
+        if (h[2]) rowData[h[2]] = data.area || '';
+        if (h[3]) rowData[h[3]] = data.recommender || '본사';
+        if (h[4]) rowData[h[4]] = data.aptName || '';
+        if (h[5]) rowData[h[5]] = data.pyeong || '';
+        if (h[6]) rowData[h[6]] = data.scope || '';
+        if (h[7]) rowData[h[7]] = '시공완료';
+        if (h[8]) rowData[h[8]] = true;
+        if (h[9]) rowData[h[9]] = true;
+        if (h[10]) rowData[h[10]] = data.saleAmount || 0;
+        if (h[11]) rowData[h[11]] = 0;
+        if (h[12]) rowData[h[12]] = '미정산';
+
+        const newRow = await sheet.addRow(rowData);
+        const rowIndex = newRow.rowNumber - 1;
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (sheet as any)._makeSingleUpdateRequest('setDataValidation', {
+                range: {
+                    sheetId: sheet.sheetId,
+                    startRowIndex: rowIndex,
+                    endRowIndex: rowIndex + 1,
+                    startColumnIndex: 8,
+                    endColumnIndex: 10
+                },
+                rule: { condition: { type: 'BOOLEAN' }, showCustomUi: true }
+            });
+        } catch (e) {
+            console.error('Failed to set checkbox validation:', e);
         }
-    });
+
+        return NextResponse.json({ success: true }, { headers: CORS_HEADERS });
+    } catch (error: any) {
+        console.error('Leads POST error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+    }
 }

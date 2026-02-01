@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
                     const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
                     const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
 
-                    const match = rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+                    // 사용자의 요청에 따라 '예약완료(I열)'가 TRUE인 데이터만 필터링
+                    const match = rName === recommender.trim().toLowerCase() && isBooked;
 
                     if (rName === recommender.trim().toLowerCase()) {
                         console.log(`[Leads API] Row match attempt: Apt="${r.get(lh[4])}", Booked=${isBooked}, Comp=${isCompleted}, Result=${match}`);

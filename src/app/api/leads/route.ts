@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'apartments' && recommender) {
+            console.log(`[Leads API] Fetching apartments for recommender: "${recommender}"`);
+            console.log(`[Leads API] Headers found:`, lh);
+
             const apartments = rows
                 .filter(r => {
                     const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
@@ -38,8 +41,13 @@ export async function GET(request: NextRequest) {
                     const isBooked = bookVal === true || String(bookVal).toUpperCase() === 'TRUE';
                     const isCompleted = compVal === true || String(compVal).toUpperCase() === 'TRUE';
 
-                    // 추천인이 일치하고 예약은 되었으며 시공은 안 된 항목만 추출
-                    return rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+                    const match = rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
+
+                    if (rName === recommender.trim().toLowerCase()) {
+                        console.log(`[Leads API] Row match attempt: Apt="${r.get(lh[4])}", Booked=${isBooked}, Comp=${isCompleted}, Result=${match}`);
+                    }
+
+                    return match;
                 })
                 .map(r => ({
                     aptName: String(r.get(lh[4]) || '').trim()
@@ -48,6 +56,8 @@ export async function GET(request: NextRequest) {
                     item.aptName !== '' &&
                     self.findIndex(t => t.aptName === item.aptName) === index
                 );
+
+            console.log(`[Leads API] Found ${apartments.length} matching apartments`);
             return NextResponse.json({ apartments });
         }
 

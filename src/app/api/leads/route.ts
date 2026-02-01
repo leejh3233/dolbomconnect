@@ -1,4 +1,5 @@
 // Final deployment trigger for D-column and CORS fix
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getSpreadsheet } from '@/lib/google-sheets';
 
@@ -96,8 +97,8 @@ export async function POST(request: Request) {
         const rowIndex = newRow.rowNumber - 1;
 
         try {
-            // @ts-ignore
-            await sheet._makeSingleUpdateRequest('setDataValidation', {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (sheet as any)._makeSingleUpdateRequest('setDataValidation', {
                 range: {
                     sheetId: sheet.sheetId,
                     startRowIndex: rowIndex,

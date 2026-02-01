@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
         const lh = sheet.headerValues;
 
         if (type === 'partners') {
-            // D열(index 3)에서 추천인 목록 추출
             const partnerNames = Array.from(new Set(
                 rows
                     .map(row => row.get(lh[3]))
@@ -43,6 +42,7 @@ export async function GET(request: NextRequest) {
                     const rName = String(r.get(lh[3]) || '').trim().toLowerCase();
                     const isBooked = String(r.get(lh[8])).toUpperCase() === 'TRUE';
                     const isCompleted = String(r.get(lh[9])).toUpperCase() === 'TRUE';
+                    // 추천인이 일치하고 예약은 되었으며 시공은 안 된 항목만 추출
                     return rName === recommender.trim().toLowerCase() && isBooked && !isCompleted;
                 })
                 .map(r => ({
@@ -59,11 +59,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ apartments }, { headers: CORS_HEADERS });
         }
 
-        return NextResponse.json({
-            status: "ok",
-            message: "Leads API active",
-            timestamp: new Date().toISOString()
-        }, { headers: CORS_HEADERS });
+        return NextResponse.json({ status: "ok" }, { headers: CORS_HEADERS });
     } catch (error: any) {
         console.error('Leads GET error:', error);
         return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
@@ -77,42 +73,67 @@ export async function POST(request: NextRequest) {
         const sheet = doc.sheetsById['0'] || doc.sheetsByIndex[0];
         await sheet.loadHeaderRow();
         const h = sheet.headerValues;
+        const rows = await sheet.getRows();
 
-        const rowData: Record<string, any> = {};
-        if (h[0]) rowData[h[0]] = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }).replace(/\. /g, '.').replace(/\.$/, '');
-        if (h[1]) rowData[h[1]] = data.source || '현장시공';
-        if (h[2]) rowData[h[2]] = data.area || '';
-        if (h[3]) rowData[h[3]] = data.recommender || '본사';
-        if (h[4]) rowData[h[4]] = data.aptName || '';
-        if (h[5]) rowData[h[5]] = data.pyeong || '';
-        if (h[6]) rowData[h[6]] = data.scope || '';
-        if (h[7]) rowData[h[7]] = '시공완료';
-        if (h[8]) rowData[h[8]] = true;
-        if (h[9]) rowData[h[9]] = true;
-        if (h[10]) rowData[h[10]] = data.saleAmount || 0;
-        if (h[11]) rowData[h[11]] = 0;
-        if (h[12]) rowData[h[12]] = '미정산';
+        const recommender = String(data.recommender || '').trim().toLowerCase();
+        const aptName = String(data.aptName || '').trim().toLowerCase();
 
-        const newRow = await sheet.addRow(rowData);
-        const rowIndex = newRow.rowNumber - 1;
+        // 1. 기존 '예약완료' 행 찾기
+        const targetRow = [...rows].reverse().find(r => {
+            const rName = String(r.get(h[3]) || '').trim().toLowerCase();
+            const rApt = String(r.get(h[4]) || '').trim().toLowerCase();
+            const isBooked = String(r.get(h[8])).toUpperCase() === 'TRUE';
+            const isCompleted = String(r.get(h[9])).toUpperCase() === 'TRUE';
+            return rName === recommender && rApt === aptName && isBooked && !isCompleted;
+        });
 
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (sheet as any)._makeSingleUpdateRequest('setDataValidation', {
-                range: {
-                    sheetId: sheet.sheetId,
-                    startRowIndex: rowIndex,
-                    endRowIndex: rowIndex + 1,
-                    startColumnIndex: 8,
-                    endColumnIndex: 10
-                },
-                rule: { condition: { type: 'BOOLEAN' }, showCustomUi: true }
-            });
-        } catch (e) {
-            console.error('Failed to set checkbox validation:', e);
+        if (targetRow) {
+            // 기존 행 업데이트
+            if (h[9]) targetRow.set(h[9], true); // 시공완료 체크박스
+            if (h[10]) targetRow.set(h[10], data.saleAmount || 0); // 판매비용
+            if (h[11]) targetRow.set(h[11], 20000); // 인센티브
+            if (h[12]) targetRow.set(h[12], '미정산'); // 정산상태
+
+            await targetRow.save();
+            return NextResponse.json({ success: true, mode: 'updated' }, { headers: CORS_HEADERS });
+        } else {
+            // 일치하는 행이 없으면 새로 추가 (Fallback)
+            const rowData: Record<string, any> = {};
+            if (h[0]) rowData[h[0]] = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }).replace(/\. /g, '.').replace(/\.$/, '');
+            if (h[1]) rowData[h[1]] = data.source || '현장시공';
+            if (h[2]) rowData[h[2]] = data.area || '';
+            if (h[3]) rowData[h[3]] = data.recommender || '본사';
+            if (h[4]) rowData[h[4]] = data.aptName || '';
+            if (h[5]) rowData[h[5]] = data.pyeong || '';
+            if (h[6]) rowData[h[6]] = data.scope || '';
+            if (h[7]) rowData[h[7]] = '시공완료';
+            if (h[8]) rowData[h[8]] = true;
+            if (h[9]) rowData[h[9]] = true;
+            if (h[10]) rowData[h[10]] = data.saleAmount || 0;
+            if (h[11]) rowData[h[11]] = 20000;
+            if (h[12]) rowData[h[12]] = '미정산';
+
+            const newRow = await sheet.addRow(rowData);
+
+            // 체크박스 속성 부여
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                await (sheet as any)._makeSingleUpdateRequest('setDataValidation', {
+                    range: {
+                        sheetId: sheet.sheetId,
+                        startRowIndex: newRow.rowNumber - 1,
+                        endRowIndex: newRow.rowNumber,
+                        startColumnIndex: 8,
+                        endColumnIndex: 10
+                    },
+                    rule: { condition: { type: 'BOOLEAN' }, showCustomUi: true }
+                });
+            } catch (e) {
+                console.error('DataValidation error:', e);
+            }
+
+            return NextResponse.json({ success: true, mode: 'inserted' }, { headers: CORS_HEADERS });
         }
-
-        return NextResponse.json({ success: true }, { headers: CORS_HEADERS });
     } catch (error: any) {
         console.error('Leads POST error:', error);
         return NextResponse.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });

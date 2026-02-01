@@ -168,21 +168,48 @@ export async function POST(request: NextRequest) {
 
             const dateStr = `${y}. ${m}. ${d} ${ampm} ${hours}:${mm}:${ss}`;
 
+            let finalRecommender = recommender;
+            let finalSource = data.source || '직접유입';
+
+            // Real-time verification for validity
+            if (recommender && recommender !== '본사') {
+                try {
+                    const partnersSheet = doc.sheetsByTitle['Partners'];
+                    await partnersSheet.loadHeaderRow();
+                    const ph = partnersSheet.headerValues;
+                    const pRows = await partnersSheet.getRows();
+                    const p = pRows.find(pr => normalizeStr(pr.get(ph[0])) === recommender);
+                    const status = p ? String(p.get(ph[7]) || '').trim() : '';
+
+                    if (!p || status === '제외' || status === 'Expired') {
+                        console.log(`[Leads POST] Recommender ${recommender} is invalid/deleted. Overwriting to 본사.`);
+                        finalRecommender = '본사';
+                        finalSource = `${finalSource} (비활성:${recommender})`;
+                    }
+                } catch (err) {
+                    console.error('[Leads POST] Partner verify error:', err);
+                }
+            }
+
             const newRow: any = {};
             h.forEach(header => {
                 const nh = normalizeStr(header);
-                if (nh.includes('추천인')) newRow[header] = data.recommender || data.empId || '본사';
+                if (nh.includes('추천인')) newRow[header] = finalRecommender === '본사' ? '본사' : (data.recommender || data.empId || '본사');
                 else if (nh.includes('아파트')) newRow[header] = data.aptName || '';
                 else if (nh.includes('지역')) newRow[header] = data.area || '';
                 else if (nh.includes('평수')) newRow[header] = data.pyeong || '';
                 else if (nh.includes('시공범위')) newRow[header] = data.scope || '';
-                else if (nh.includes('유입경로')) newRow[header] = data.source || '직접유입';
+                else if (nh.includes('유입경로')) newRow[header] = finalSource;
                 else if (nh.includes('날짜') || nh.includes('일자')) newRow[header] = dateStr;
                 else if (nh.includes('진행') || nh.includes('상태')) newRow[header] = '상담대기';
                 else if (nh === normalizeStr('매출액') || nh === normalizeStr('판매금액')) newRow[header] = '0';
                 else if (nh.includes('인센티브')) newRow[header] = '0';
                 else if (nh.includes('정산')) newRow[header] = '미정산';
             });
+
+            // Double check recommender value for the specific row
+            const rIdx = h.findIndex(header => normalizeStr(header).includes('추천인'));
+            if (rIdx !== -1) newRow[h[rIdx]] = finalRecommender;
 
             await sheet.addRow(newRow);
             return NextResponse.json({ success: true, mode: 'inserted' });

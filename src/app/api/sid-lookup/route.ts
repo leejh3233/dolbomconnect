@@ -18,9 +18,33 @@ export async function GET(request: Request) {
         const link = rows.find(r => String(r.get(h[0])).trim().toUpperCase() === String(sid).trim().toUpperCase());
 
         if (link) {
+            const partnerName = String(link.get(h[1])).trim();
+            const source = link.get(h[2]);
+
+            // Verify if partner still exists and is Active
+            try {
+                const partnersSheet = doc.sheetsByTitle['Partners'];
+                await partnersSheet.loadHeaderRow();
+                const ph = partnersSheet.headerValues;
+                const pRows = await partnersSheet.getRows();
+
+                const p = pRows.find(pr => String(pr.get(ph[0])).trim() === partnerName);
+                const status = p ? String(p.get(ph[7]) || '').trim() : '';
+
+                if (!p || status === '제외' || status === 'Expired') {
+                    console.log(`[SID Lookup] Partner ${partnerName} is inactive/deleted. Falling back to 본사.`);
+                    return NextResponse.json({
+                        empId: '본사',
+                        source: `${source} (비활성 파트너)`
+                    });
+                }
+            } catch (err) {
+                console.error('[SID Lookup] Partner verify error, fallback to original name:', err);
+            }
+
             return NextResponse.json({
-                empId: link.get(h[1]), // Index 1: 이름
-                source: link.get(h[2]) // Index 2: 유입경로
+                empId: partnerName,
+                source: source
             });
         }
 

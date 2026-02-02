@@ -208,6 +208,7 @@ export default function AdminPage() {
         if (lead) {
             if (col === 9) lead.isBooking = value;
             if (col === 10) lead.isCompleted = value;
+            if (col === 11) lead.saleAmount = value; // Multi-column support
             setMasterData(newData); // Update local state immediately
         }
 
@@ -424,7 +425,22 @@ export default function AdminPage() {
                                                     className="w-4 h-4 rounded"
                                                 />
                                             </td>
-                                            <td className="px-8 py-4 font-black">{fmt(l.saleAmount)}원</td>
+                                            <td className="px-8 py-4">
+                                                <button
+                                                    onClick={() => {
+                                                        const newVal = prompt(`${l.apt} 매출액 수정`, l.saleAmount);
+                                                        if (newVal !== null) {
+                                                            const numVal = parseFloat(newVal.replace(/,/g, ''));
+                                                            if (!isNaN(numVal)) {
+                                                                updateStatus(l.rowId, 11, numVal); // Index 10 in sheet is col 11 (1-based)
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="font-black hover:text-blue-600 hover:underline transition-all"
+                                                >
+                                                    {fmt(l.saleAmount)}원
+                                                </button>
+                                            </td>
                                             <td className="px-8 py-4 text-right">
                                                 <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${l.isCompleted ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-400'}`}>
                                                     {l.isCompleted ? '시공완료' : l.isBooking ? '예약완료' : '상담대기'}

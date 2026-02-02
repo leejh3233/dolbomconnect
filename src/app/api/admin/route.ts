@@ -155,8 +155,6 @@ export async function PATCH(request: Request) {
             const headerName = headers[col - 1];
 
             if (headerName) {
-                realTargetRow.set(headerName, value);
-
                 // Logical side effects from Code.gs
                 // Index 9 (1-based col 10) is 시공완료
                 if (col === 10) {
@@ -164,6 +162,13 @@ export async function PATCH(request: Request) {
                     if (incHeader) {
                         realTargetRow.set(incHeader, (value === true || value === 'TRUE') ? 20000 : 0);
                     }
+                }
+
+                // If updating sales amount (col 11), also ensure it's treated as number
+                if (col === 11) {
+                    realTargetRow.set(headerName, parseFloat(String(value).replace(/,/g, '')) || 0);
+                } else {
+                    realTargetRow.set(headerName, value);
                 }
 
                 await realTargetRow.save();

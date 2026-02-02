@@ -100,7 +100,8 @@ export async function GET(request: Request) {
         const partnerRows = await partnersSheet.getRows();
 
         const partner = partnerRows.find(r => String(r.get(ph[0])).trim() === String(empId).trim());
-        const sheetPwdRaw = partner ? String(partner.get(ph[1])).trim() : "";
+        const rawPwd = partner ? partner.get(ph[ph.length > 1 ? 1 : 1]) : null;
+        const sheetPwdRaw = (rawPwd !== undefined && rawPwd !== null) ? rawPwd.toString().trim() : "";
         const sheetPwd = sheetPwdRaw !== "" ? sheetPwdRaw.padStart(4, '0') : "";
 
         if (!partner || sheetPwd !== String(password).trim()) {

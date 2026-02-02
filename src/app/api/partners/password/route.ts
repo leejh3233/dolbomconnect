@@ -34,7 +34,8 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
         }
 
-        const currentPwdRaw = String(partnerRow.get(ph[1]) || "").trim();
+        const rawPwd = partnerRow.get(ph[1]);
+        const currentPwdRaw = (rawPwd !== undefined && rawPwd !== null) ? rawPwd.toString().trim() : "";
         const currentPwd = currentPwdRaw !== "" ? currentPwdRaw.padStart(4, '0') : "";
 
         // Verify Old Password

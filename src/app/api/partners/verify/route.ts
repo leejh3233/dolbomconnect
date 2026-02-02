@@ -19,7 +19,8 @@ export async function POST(request: Request) {
             // Map by index for robustness
             // 0:이름, 1:비밀번호, 2:은행, 3:계좌번호, 4:유형, 7:상태
             const sheetName = String(r.get(ph[0]) || "").trim();
-            const sheetPwd = String(r.get(ph[1]) || "").trim();
+            const sheetPwdRaw = String(r.get(ph[1]) || "").trim();
+            const sheetPwd = sheetPwdRaw !== "" ? sheetPwdRaw.padStart(4, '0') : "";
             const sheetBank = ph[2] ? r.get(ph[2]) : null;
             const sheetAccount = ph[3] ? r.get(ph[3]) : null;
             const sheetType = ph[4] ? r.get(ph[4]) : null;

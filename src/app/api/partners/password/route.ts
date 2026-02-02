@@ -34,10 +34,11 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Partner not found' }, { status: 404 });
         }
 
-        const currentPwd = partnerRow.get(ph[1]); // Index 1 is password
+        const currentPwdRaw = String(partnerRow.get(ph[1]) || "").trim();
+        const currentPwd = currentPwdRaw !== "" ? currentPwdRaw.padStart(4, '0') : "";
 
         // Verify Old Password
-        if (String(currentPwd) !== String(oldPassword)) {
+        if (currentPwd !== String(oldPassword)) {
             return NextResponse.json({ error: '기존 비밀번호가 일치하지 않습니다.' }, { status: 400 });
         }
 

@@ -578,7 +578,7 @@ export default function AdminPage() {
                                                     {pending === 0 && settled === 0 && <span className="text-slate-300">-</span>}
                                                 </td>
                                                 <td className="px-8 py-5 text-right">
-                                                    {pending > 0 ? (
+                                                    {pending > 0 && settleStatus !== '정산완료' ? (
                                                         <button
                                                             onClick={() => confirmSettle(p)}
                                                             className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg shadow-blue-200 active:scale-95 transition-all"

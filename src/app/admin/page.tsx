@@ -413,7 +413,14 @@ export default function AdminPage() {
                                                 <input
                                                     type="checkbox"
                                                     checked={l.isBooking}
-                                                    onChange={(e) => updateStatus(l.rowId, 9, e.target.checked)}
+                                                    onChange={(e) => {
+                                                        const newVal = e.target.checked;
+                                                        updateStatus(l.rowId, 9, newVal);
+                                                        // If reservation is unchecked, also uncheck completion
+                                                        if (!newVal && l.isCompleted) {
+                                                            updateStatus(l.rowId, 10, false);
+                                                        }
+                                                    }}
                                                     className="w-4 h-4 rounded"
                                                 />
                                             </td>
@@ -421,8 +428,9 @@ export default function AdminPage() {
                                                 <input
                                                     type="checkbox"
                                                     checked={l.isCompleted}
+                                                    disabled={!l.isBooking}
                                                     onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)}
-                                                    className="w-4 h-4 rounded"
+                                                    className={`w-4 h-4 rounded ${!l.isBooking ? 'opacity-20' : ''}`}
                                                 />
                                             </td>
                                             <td className="px-8 py-4">
@@ -460,11 +468,15 @@ export default function AdminPage() {
                                         <div className="font-black text-slate-900">{l.partner} <span className="font-normal text-slate-400 text-xs">| {l.apt}</span></div>
                                         <div className="flex justify-between items-center pt-2">
                                             <div className="flex gap-4">
-                                                <label className="flex items-center gap-1 text-[10px] font-bold">
-                                                    <input type="checkbox" checked={l.isBooking} onChange={(e) => updateStatus(l.rowId, 9, e.target.checked)} /> 예약
+                                                <label className={`flex items-center gap-1 text-[10px] font-bold`}>
+                                                    <input type="checkbox" checked={l.isBooking} onChange={(e) => {
+                                                        const newVal = e.target.checked;
+                                                        updateStatus(l.rowId, 9, newVal);
+                                                        if (!newVal && l.isCompleted) updateStatus(l.rowId, 10, false);
+                                                    }} /> 예약
                                                 </label>
-                                                <label className="flex items-center gap-1 text-[10px] font-bold">
-                                                    <input type="checkbox" checked={l.isCompleted} onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)} /> 시공
+                                                <label className={`flex items-center gap-1 text-[10px] font-bold ${!l.isBooking ? 'opacity-20' : ''}`}>
+                                                    <input type="checkbox" checked={l.isCompleted} disabled={!l.isBooking} onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)} /> 시공
                                                 </label>
                                             </div>
                                             <div className="font-black text-sm">{fmt(l.saleAmount)}원</div>

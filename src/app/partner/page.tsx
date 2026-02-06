@@ -380,42 +380,7 @@ export default function PartnerPage() {
                                     <button onClick={createNewLink} className="bg-blue-600 text-white px-6 py-3 rounded-xl font-black text-sm active:scale-95">링크 생성</button>
                                 </div>
                             </div>
-
-                            <div className="pt-6 border-t border-slate-50">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">나의 브랜드 URL (추천인 고유 주소)</h3>
-                                    <span className="bg-blue-50 text-blue-600 text-[9px] font-black px-2 py-0.5 rounded-full">NEW</span>
-                                </div>
-                                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 rounded-2xl shadow-lg relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform">
-                                        <svg className="w-20 h-20 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z"></path>
-                                            <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z"></path>
-                                        </svg>
-                                    </div>
-                                    <div className="relative z-10">
-                                        <p className="text-blue-100 text-[10px] font-bold mb-1">복잡한 파라미터 없이 이름만으로 접속 가능합니다!</p>
-                                        <div className="flex items-center gap-3">
-                                            <div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-3 rounded-xl flex-1 truncate">
-                                                <span className="text-white font-mono text-sm font-bold">
-                                                    {typeof window !== 'undefined' ? `${window.location.host}/${partnerName}` : `dolbomconnect.vercel.app/${partnerName}`}
-                                                </span>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    const url = typeof window !== 'undefined' ? `${window.location.origin}/${partnerName}` : `https://dolbomconnect.vercel.app/${partnerName}`;
-                                                    copyToClipboard(url);
-                                                }}
-                                                className="bg-white text-blue-600 px-5 py-3 rounded-xl font-black text-xs shadow-xl active:scale-90 transition-transform whitespace-nowrap"
-                                            >
-                                                주소 복사
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-6 border-t border-slate-50">
+                            <div className="pt-4 border-t border-slate-50">
                                 <h4 className="text-[9px] font-black text-slate-300 uppercase mb-3 tracking-widest">발급된 고유 링크 내역</h4>
                                 <div className="space-y-2">
                                     {myLinks.length === 0 ? (

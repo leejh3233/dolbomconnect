@@ -104,12 +104,28 @@ export default function ReportPage() {
     };
 
     const handleSend = async () => {
+        // ⚠️ 전송 전 유효성 검사 (데이터 전송 전에 먼저 확인!)
+        if (form.추천인 && form.추천인 !== "없음" && form.추천인.trim().length >= 2) {
+            if (aptList.length > 0) {
+                const isValidApt = aptList.some((apt: any) => apt.aptName === form.아파트명);
+                if (!isValidApt) {
+                    alert("❌ 아파트명을 항목에서 선택해주세요!\n\n추천인으로 예약된 아파트 목록에서만 선택 가능합니다.\n현재 입력값: " + (form.아파트명 || "(비어있음)"));
+                    return; // 전송 중단
+                }
+            }
+        }
+
+        if (!form.아파트명.trim()) {
+            alert("❌ 아파트명을 입력해주세요!");
+            return;
+        }
+
         const cleanSaleAmount = form.판매비용.toString().replace(/,/g, '');
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbzITllVlYaPqmfoT7eVPd1nSDl31uiaQFO9VFILQeBo_swAUNScMOKM_F_c9iz7TbKI/exec";
 
         try {
             // 1. 엑셀 시트 전송 (Apps Script - 시공보고서 기록용)
-            fetch(appsScriptUrl, {
+            await fetch(appsScriptUrl, {
                 method: "POST",
                 mode: "no-cors",
                 body: JSON.stringify({
@@ -142,7 +158,7 @@ export default function ReportPage() {
                 }
             }
 
-            alert("시공보고서 전송이 완료되었습니다!");
+            alert("✅ 시공보고서 전송이 완료되었습니다!");
         } catch (e: any) {
             alert(e.message || "전송 중 오류가 발생했습니다.");
         }

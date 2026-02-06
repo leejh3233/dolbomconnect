@@ -67,7 +67,13 @@ export default function ReportPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+
+        // 추천인이 변경되면 아파트명 초기화
+        if (name === "추천인") {
+            setForm(prev => ({ ...prev, [name]: value, 아파트명: "" }));
+        } else {
+            setForm(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleScopeChange = (scope: string) => {
@@ -178,20 +184,16 @@ export default function ReportPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. 추천인 (검색)</label>
-                    <input
-                        type="text"
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. 추천인 (선택)</label>
+                    <select
                         name="추천인"
                         value={form.추천인}
                         onChange={handleChange}
-                        list="partner-list"
-                        autoComplete="off"
-                        placeholder="추천인 이름을 입력하세요 (없으면 '없음' 입력)"
-                        className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all"
-                    />
-                    <datalist id="partner-list">
-                        {partners.map(p => <option key={p} value={p} />)}
-                    </datalist>
+                        className="w-full border-2 border-blue-300 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white text-gray-800 font-medium"
+                    >
+                        {partners.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <p className="text-[10px] text-gray-400 mt-1 ml-1">* 예약완료된 추천인만 목록에 표시됩니다.</p>
                 </div>
 
                 <div>
@@ -199,45 +201,51 @@ export default function ReportPage() {
                         5. 아파트명 {isLoading && <span className="text-blue-500 text-xs animate-pulse">(로딩 중...)</span>}
                     </label>
 
-                    {/* 추천인이 "없음"이 아니고 아파트 목록이 있으면 select 드롭다운 사용 (목록 외 입력 원천 차단) */}
-                    {isAptEnabled && form.추천인 !== "없음" && aptList.length > 0 ? (
-                        <select
-                            name="아파트명"
-                            value={form.아파트명}
-                            onChange={handleChange}
-                            className="w-full border-2 border-blue-300 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white text-gray-800 font-medium"
-                        >
-                            <option value="">-- 아파트를 선택하세요 --</option>
-                            {aptList.map((apt: any, idx: number) => (
-                                <option key={idx} value={apt.aptName}>{apt.aptName}</option>
-                            ))}
-                        </select>
+                    {/* 추천인이 "없음"이 아닌 경우 - 드롭다운으로 선택 (목록 외 입력 원천 차단) */}
+                    {form.추천인 !== "없음" ? (
+                        <>
+                            <select
+                                name="아파트명"
+                                value={form.아파트명}
+                                onChange={handleChange}
+                                disabled={isLoading || aptList.length === 0}
+                                className={`w-full border-2 p-3 rounded-lg outline-none transition-all font-medium ${isLoading || aptList.length === 0
+                                        ? "bg-gray-50 border-gray-200 text-gray-400"
+                                        : "bg-white border-blue-300 text-gray-800 focus:border-blue-500"
+                                    }`}
+                            >
+                                {isLoading ? (
+                                    <option value="">로딩 중...</option>
+                                ) : aptList.length === 0 ? (
+                                    <option value="">예약된 아파트가 없습니다</option>
+                                ) : (
+                                    <>
+                                        <option value="">-- 아파트를 선택하세요 --</option>
+                                        {aptList.map((apt: any, idx: number) => (
+                                            <option key={idx} value={apt.aptName}>{apt.aptName}</option>
+                                        ))}
+                                    </>
+                                )}
+                            </select>
+                            {aptList.length > 0 && (
+                                <p className="text-[10px] text-blue-500 mt-1 ml-1">✅ 위 목록에서 아파트를 선택해주세요.</p>
+                            )}
+                            {!isLoading && aptList.length === 0 && (
+                                <p className="text-[10px] text-red-400 mt-1 ml-1">⚠️ 해당 추천인으로 예약완료된 아파트가 없습니다.</p>
+                            )}
+                        </>
                     ) : (
-                        <input
-                            type="text"
-                            name="아파트명"
-                            value={form.아파트명}
-                            onChange={handleChange}
-                            disabled={!isAptEnabled}
-                            placeholder={
-                                !isAptEnabled ? "추천인을 먼저 입력하세요" :
-                                    form.추천인 === "없음" ? "아파트명을 자유롭게 입력하세요" :
-                                        isLoading ? "아파트 목록 로딩 중..." :
-                                            "아파트명을 입력하세요"
-                            }
-                            className={`w-full border-2 p-3 rounded-lg outline-none transition-all ${!isAptEnabled
-                                ? "bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400"
-                                : "bg-white border-gray-200 focus:border-blue-500 text-gray-800"
-                                }`}
-                        />
-                    )}
-
-                    {/* 안내 메시지 */}
-                    {isAptEnabled && form.추천인 !== "없음" && !isLoading && aptList.length === 0 && form.추천인.trim().length >= 2 && (
-                        <p className="text-[10px] text-red-400 mt-1 ml-1">⚠️ 해당 추천인으로 '예약완료'된 아파트가 없습니다. 자유 입력 가능합니다.</p>
-                    )}
-                    {isAptEnabled && form.추천인 !== "없음" && aptList.length > 0 && (
-                        <p className="text-[10px] text-blue-500 mt-1 ml-1">✅ 위 목록에서 아파트를 선택해주세요.</p>
+                        <>
+                            <input
+                                type="text"
+                                name="아파트명"
+                                value={form.아파트명}
+                                onChange={handleChange}
+                                placeholder="아파트명을 자유롭게 입력하세요"
+                                className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white text-gray-800"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1 ml-1">* 추천인이 없는 경우 자유 입력 가능합니다.</p>
+                        </>
                     )}
                 </div>
 

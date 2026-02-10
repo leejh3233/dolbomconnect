@@ -176,11 +176,16 @@ export async function POST(request: Request) {
             await sheet.loadHeaderRow();
             const h = sheet.headerValues;
 
-            // KST 날짜 생성
+            // KST 날짜 생성 (기존 시트 형식: "2026. 1. 25 오전")
             const now = new Date();
             const kstOffset = 9 * 60 * 60 * 1000;
             const kstDate = new Date(now.getTime() + kstOffset);
-            const dateStr = kstDate.toISOString().slice(0, 10); // YYYY-MM-DD
+            const y = kstDate.getUTCFullYear();
+            const m = kstDate.getUTCMonth() + 1;
+            const d = kstDate.getUTCDate();
+            const hours = kstDate.getUTCHours();
+            const ampm = hours >= 12 ? '오후' : '오전';
+            const dateStr = `${y}. ${m}. ${d} ${ampm}`;
 
             const newRow: Record<string, any> = {};
             if (h[0]) newRow[h[0]] = name;
@@ -188,8 +193,8 @@ export async function POST(request: Request) {
             if (h[2]) newRow[h[2]] = '';
             if (h[3]) newRow[h[3]] = '';
             if (h[4]) newRow[h[4]] = type || '외부파트너';
-            if (h[5]) newRow[h[5]] = dateStr; // CreatedDate
-            if (h[6]) newRow[h[6]] = dateStr; // 등록일 (혹시 다른 날짜 컬럼이 있을 경우)
+            if (h[5]) newRow[h[5]] = ''; // ExpiryDate - 등록 시 비움
+            if (h[6]) newRow[h[6]] = dateStr; // CreatedDate
             if (h[7]) newRow[h[7]] = 'Active';
 
             await sheet.addRow(newRow);
@@ -207,10 +212,26 @@ export async function POST(request: Request) {
             const pRow = rows.find(r => r.get(h[0]) === partnerName);
 
             if (pRow) {
-                // Status is usually Index 7 based on our previous logic
-                // "Active" or "Expired" / "제외"
                 const statusHeader = h[7] || '상태';
                 pRow.set(statusHeader, status);
+
+                // ExpiryDate(h[5]) : 만료/제외 시 날짜 기록, 복구 시 초기화
+                if (h[5]) {
+                    if (status === '제외') {
+                        const now = new Date();
+                        const kstOffset = 9 * 60 * 60 * 1000;
+                        const kstDate = new Date(now.getTime() + kstOffset);
+                        const y = kstDate.getUTCFullYear();
+                        const m = kstDate.getUTCMonth() + 1;
+                        const d = kstDate.getUTCDate();
+                        const hours = kstDate.getUTCHours();
+                        const ampm = hours >= 12 ? '오후' : '오전';
+                        pRow.set(h[5], `${y}. ${m}. ${d} ${ampm}`);
+                    } else {
+                        pRow.set(h[5], ''); // 복구 시 ExpiryDate 초기화
+                    }
+                }
+
                 await pRow.save();
                 return NextResponse.json({ success: true });
             }

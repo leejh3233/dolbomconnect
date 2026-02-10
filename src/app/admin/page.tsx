@@ -26,7 +26,7 @@ export default function AdminPage() {
 
     // Registration State
     const [regModal, setRegModal] = useState(false);
-    const [regForm, setRegForm] = useState({ name: '', type: '인플루언서' });
+    const [regForm, setRegForm] = useState({ name: '', type: '외부파트너' });
     const [isRegistering, setIsRegistering] = useState(false);
 
     const settlePartner = async () => {
@@ -65,7 +65,7 @@ export default function AdminPage() {
                 doSettleDirect(p.name);
             }
         } else {
-            setSettleModal({ partner: p.name, amount: pending, bank: p.bank, account: p.account, type: '인플루언서' });
+            setSettleModal({ partner: p.name, amount: pending, bank: p.bank, account: p.account, type: '외부파트너' });
         }
     };
 
@@ -140,7 +140,7 @@ export default function AdminPage() {
             if (data.success) {
                 alert(`${regForm.name}님 등록이 완료되었습니다.`);
                 setRegModal(false);
-                setRegForm({ name: '', type: '인플루언서' });
+                setRegForm({ name: '', type: '외부파트너' });
                 fetchData();
             } else {
                 alert(data.error || '등록 실패');
@@ -560,7 +560,7 @@ export default function AdminPage() {
                                         return (
                                             <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-8 py-5 font-black text-slate-800">{p.name}</td>
-                                                <td className="px-8 py-5 text-xs text-slate-500 font-bold">{p.type || '인플루언서'}</td>
+                                                <td className="px-8 py-5 text-xs text-slate-500 font-bold">{p.type || '외부파트너'}</td>
                                                 <td className="px-8 py-5">
                                                     {settleStatus !== '정산완료' && pending > 0 && <div className="text-red-500 font-black">미정산: {fmt(pending)}원</div>}
                                                     {settleStatus !== '미정산' && settled > 0 && <div className="text-blue-500 font-black">완료: {fmt(settled)}원</div>}
@@ -626,7 +626,7 @@ export default function AdminPage() {
                                         return (
                                             <tr key={i} className={`hover:bg-slate-50/50 transition-colors ${p.status === '제외' ? 'bg-slate-50 opacity-60' : ''}`}>
                                                 <td className="px-8 py-5 font-black text-slate-800">{p.name}</td>
-                                                <td className="px-8 py-5 text-xs text-slate-500 font-bold">{p.type || '인플루언서'}</td>
+                                                <td className="px-8 py-5 text-xs text-slate-500 font-bold">{p.type || '외부파트너'}</td>
                                                 <td className="px-8 py-5">
                                                     <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${p.status === 'Active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-500'}`}>
                                                         {p.status === '제외' ? '만료/제외' : '활동중'}
@@ -722,10 +722,10 @@ export default function AdminPage() {
                                 <label className="text-[10px] font-black text-slate-400 uppercase mb-2 block ml-1">유형</label>
                                 <div className="flex bg-slate-50 rounded-2xl p-1.5 border border-slate-100">
                                     <button
-                                        onClick={() => setRegForm({ ...regForm, type: '인플루언서' })}
-                                        className={`flex-1 py-3 rounded-xl text-[11px] font-black transition-all ${regForm.type === '인플루언서' ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}
+                                        onClick={() => setRegForm({ ...regForm, type: '외부파트너' })}
+                                        className={`flex-1 py-3 rounded-xl text-[11px] font-black transition-all ${regForm.type === '외부파트너' ? 'bg-white shadow-md text-slate-900' : 'text-slate-400'}`}
                                     >
-                                        인플루언서
+                                        외부파트너
                                     </button>
                                     <button
                                         onClick={() => setRegForm({ ...regForm, type: '직원' })}
@@ -741,7 +741,7 @@ export default function AdminPage() {
                             <button
                                 onClick={() => {
                                     setRegModal(false);
-                                    setRegForm({ name: '', type: '인플루언서' });
+                                    setRegForm({ name: '', type: '외부파트너' });
                                 }}
                                 className="flex-1 py-4 font-bold text-slate-400 text-sm"
                             >

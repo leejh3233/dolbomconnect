@@ -208,6 +208,10 @@ export default function AdminPage() {
         if (lead) {
             if (col === 9) lead.isBooking = value;
             if (col === 10) lead.isCompleted = value;
+            // 예약 해제 시 시공도 함께 해제
+            if (col === 9 && !value && lead.isCompleted) {
+                lead.isCompleted = false;
+            }
             setMasterData(newData); // Update local state immediately
         }
 
@@ -421,7 +425,8 @@ export default function AdminPage() {
                                                     type="checkbox"
                                                     checked={l.isCompleted}
                                                     onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)}
-                                                    className="w-4 h-4 rounded"
+                                                    disabled={!l.isBooking}
+                                                    className={`w-4 h-4 rounded ${!l.isBooking ? 'opacity-30 cursor-not-allowed' : ''}`}
                                                 />
                                             </td>
                                             <td className="px-8 py-4 font-black">{fmt(l.saleAmount)}원</td>
@@ -448,7 +453,7 @@ export default function AdminPage() {
                                                     <input type="checkbox" checked={l.isBooking} onChange={(e) => updateStatus(l.rowId, 9, e.target.checked)} /> 예약
                                                 </label>
                                                 <label className="flex items-center gap-1 text-[10px] font-bold">
-                                                    <input type="checkbox" checked={l.isCompleted} onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)} /> 시공
+                                                    <input type="checkbox" checked={l.isCompleted} onChange={(e) => updateStatus(l.rowId, 10, e.target.checked)} disabled={!l.isBooking} className={!l.isBooking ? 'opacity-30 cursor-not-allowed' : ''} /> 시공
                                                 </label>
                                             </div>
                                             <div className="font-black text-sm">{fmt(l.saleAmount)}원</div>

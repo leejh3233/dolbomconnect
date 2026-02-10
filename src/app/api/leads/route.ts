@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
             const targetIdx = rIdx !== -1 ? rIdx : 3;
             const partnerNames = Array.from(new Set(
                 rows
+                    .filter(row => bIdx !== -1 ? isTrue(row.get(lh[bIdx])) : true)
                     .map(row => String(row.get(lh[targetIdx]) || '').trim())
                     .filter(name => name !== '')
             )).sort();

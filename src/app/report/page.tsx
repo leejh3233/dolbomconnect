@@ -8,7 +8,7 @@ export default function ReportPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
         시공일자: new Date().toISOString().slice(0, 10),
-        추천인: "없음",
+        추천인: "",
         시공팀원: "",
         지역: "",
         아파트명: "",
@@ -148,7 +148,7 @@ export default function ReportPage() {
         }
     };
 
-    // 아파트명 입력란 활성화 조건: 추천인이 비어있지 않거나 "없음"일 때
+    // 아파트명 입력란 활성화 조건: 추천인이 선택되었을 때
     const isAptEnabled = form.추천인.trim() !== "";
 
     return (
@@ -162,20 +162,16 @@ export default function ReportPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. 추천인 (검색)</label>
-                    <input
-                        type="text"
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">2. 추천인</label>
+                    <select
                         name="추천인"
                         value={form.추천인}
                         onChange={handleChange}
-                        list="partner-list"
-                        autoComplete="off"
-                        placeholder="추천인 이름을 입력하세요 (없으면 '없음' 입력)"
-                        className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all"
-                    />
-                    <datalist id="partner-list">
-                        {partners.map(p => <option key={p} value={p} />)}
-                    </datalist>
+                        className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white"
+                    >
+                        <option value="">-- 추천인을 선택하세요 --</option>
+                        {partners.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
                 </div>
 
                 <div>

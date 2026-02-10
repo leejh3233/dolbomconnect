@@ -176,12 +176,20 @@ export async function POST(request: Request) {
             await sheet.loadHeaderRow();
             const h = sheet.headerValues;
 
+            // KST 날짜 생성
+            const now = new Date();
+            const kstOffset = 9 * 60 * 60 * 1000;
+            const kstDate = new Date(now.getTime() + kstOffset);
+            const dateStr = kstDate.toISOString().slice(0, 10); // YYYY-MM-DD
+
             const newRow: Record<string, any> = {};
             if (h[0]) newRow[h[0]] = name;
             if (h[1]) newRow[h[1]] = '';
             if (h[2]) newRow[h[2]] = '';
             if (h[3]) newRow[h[3]] = '';
-            if (h[4]) newRow[h[4]] = type || '인플루언서';
+            if (h[4]) newRow[h[4]] = type || '외부파트너';
+            if (h[5]) newRow[h[5]] = dateStr; // CreatedDate
+            if (h[6]) newRow[h[6]] = dateStr; // 등록일 (혹시 다른 날짜 컬럼이 있을 경우)
             if (h[7]) newRow[h[7]] = 'Active';
 
             await sheet.addRow(newRow);

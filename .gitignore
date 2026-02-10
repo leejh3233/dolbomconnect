@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 # google sheets API key
 google-sheets-key.json
+.env*.local

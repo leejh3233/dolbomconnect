@@ -130,6 +130,32 @@ export default function ReportPage() {
     };
 
     const handleSend = async () => {
+        // 필수 입력 검증
+        if (!form.추천인) {
+            alert("추천인을 선택해주세요.");
+            return;
+        }
+        if (!form.아파트명.trim()) {
+            alert("아파트명을 입력해주세요.");
+            return;
+        }
+        if (!form.동호수.trim()) {
+            alert("동호수를 입력해주세요.");
+            return;
+        }
+        if (!form.연락처.trim()) {
+            alert("연락처를 입력해주세요.");
+            return;
+        }
+        if (selectedScopes.length === 0) {
+            alert("시공범위를 선택해주세요.");
+            return;
+        }
+        if (!form.판매비용.toString().trim()) {
+            alert("판매비용을 입력해주세요.");
+            return;
+        }
+
         const cleanSaleAmount = form.판매비용.toString().replace(/,/g, '');
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbzITllVlYaPqmfoT7eVPd1nSDl31uiaQFO9VFILQeBo_swAUNScMOKM_F_c9iz7TbKI/exec";
 

@@ -45,7 +45,12 @@ export async function GET(request: NextRequest) {
             const targetIdx = rIdx !== -1 ? rIdx : 3;
             const partnerNames = Array.from(new Set(
                 rows
-                    .filter(row => bIdx !== -1 ? isTrue(row.get(lh[bIdx])) : true)
+                    .filter(row => {
+                        const isBooked = bIdx !== -1 ? isTrue(row.get(lh[bIdx])) : true;
+                        const isCompleted = cIdx !== -1 ? isTrue(row.get(lh[cIdx])) : false;
+                        // 예약완료 AND 시공미완료인 행만 포함
+                        return isBooked && !isCompleted;
+                    })
                     .map(row => String(row.get(lh[targetIdx]) || '').trim())
                     .filter(name => name !== '')
             )).sort();

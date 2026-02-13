@@ -43,18 +43,30 @@ export async function GET(request: NextRequest) {
 
         if (type === 'partners') {
             const targetIdx = rIdx !== -1 ? rIdx : 3;
+
+            // 디버그: 헤더 매핑 확인
+            console.log(`[Partners] Headers: ${lh.join(' | ')}`);
+            console.log(`[Partners] Column indices - R:${rIdx}, A:${aIdx}, B(예약완료):${bIdx}, C(시공완료):${cIdx}`);
+
             const partnerNames = Array.from(new Set(
                 rows
                     .filter(row => {
                         const isBooked = bIdx !== -1 ? isTrue(row.get(lh[bIdx])) : true;
                         const isCompleted = cIdx !== -1 ? isTrue(row.get(lh[cIdx])) : false;
+                        const name = String(row.get(lh[targetIdx]) || '').trim();
+
+                        // 이민우 디버그 로그
+                        if (name === '이민우') {
+                            console.log(`[Partners] 이민우 행: 예약완료=${row.get(lh[bIdx])}, 시공완료=${cIdx !== -1 ? row.get(lh[cIdx]) : 'N/A'}, isBooked=${isBooked}, isCompleted=${isCompleted}, pass=${isBooked && !isCompleted}`);
+                        }
+
                         // 예약완료 AND 시공미완료인 행만 포함
                         return isBooked && !isCompleted;
                     })
                     .map(row => String(row.get(lh[targetIdx]) || '').trim())
                     .filter(name => name !== '')
             )).sort();
-            return NextResponse.json({ partners: partnerNames });
+            return NextResponse.json({ partners: partnerNames, _debug: { cIdx, bIdx, headers: lh } });
         }
 
         if (type === 'apartments' && recommender) {

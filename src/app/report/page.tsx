@@ -99,8 +99,34 @@ export default function ReportPage() {
     };
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(generateResult());
-        alert("복사 완료!");
+        const text = generateResult();
+        try {
+            await navigator.clipboard.writeText(text);
+            alert("복사 완료!");
+        } catch {
+            // iOS Safari fallback
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.setAttribute('readonly', '');
+            textarea.style.position = 'fixed';
+            textarea.style.left = '-9999px';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+
+            // iOS specific selection
+            const range = document.createRange();
+            range.selectNodeContents(textarea);
+            const selection = window.getSelection();
+            if (selection) {
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            textarea.setSelectionRange(0, textarea.value.length);
+
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            alert("복사 완료!");
+        }
     };
 
     const handleSend = async () => {
@@ -152,13 +178,13 @@ export default function ReportPage() {
     const isAptEnabled = form.추천인.trim() !== "";
 
     return (
-        <main className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-xl my-8">
+        <main className="p-4 max-w-xl mx-auto bg-white shadow-lg rounded-xl my-8" style={{ WebkitTapHighlightColor: 'transparent' }}>
             <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">시공보고서 작성</h1>
 
             <div className="space-y-4">
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">1. 시공일자</label>
-                    <input type="date" name="시공일자" value={form.시공일자} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" />
+                    <input type="date" name="시공일자" value={form.시공일자} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" style={{ fontSize: '16px', WebkitAppearance: 'none' }} />
                 </div>
 
                 <div>
@@ -168,6 +194,7 @@ export default function ReportPage() {
                         value={form.추천인}
                         onChange={handleChange}
                         className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white"
+                        style={{ fontSize: '16px', WebkitAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M6 8L1 3h10z\' fill=\'%23666\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                     >
                         <option value="">-- 추천인을 선택하세요 --</option>
                         {partners.map(p => <option key={p} value={p}>{p}</option>)}
@@ -186,6 +213,7 @@ export default function ReportPage() {
                             value={form.아파트명}
                             onChange={handleChange}
                             className="w-full border-2 border-blue-300 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white text-gray-800 font-medium"
+                            style={{ fontSize: '16px', WebkitAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M6 8L1 3h10z\' fill=\'%23666\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
                         >
                             <option value="">-- 아파트명을 선택하세요 --</option>
                             {aptList.map((apt: any, idx: number) => (
@@ -230,7 +258,7 @@ export default function ReportPage() {
                 ].map(field => (
                     <div key={field.name}>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">{field.label}</label>
-                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" />
+                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" style={{ fontSize: '16px' }} />
                     </div>
                 ))}
 
@@ -259,13 +287,13 @@ export default function ReportPage() {
                 ].map(field => (
                     <div key={field.name}>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">{field.label}</label>
-                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" />
+                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" style={{ fontSize: '16px' }} />
                     </div>
                 ))}
 
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-1">12. 색상</label>
-                    <select name="색상" value={form.색상} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white">
+                    <select name="색상" value={form.색상} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all bg-white" style={{ fontSize: '16px', WebkitAppearance: 'none', appearance: 'none', backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath d=\'M6 8L1 3h10z\' fill=\'%23666\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}>
                         <option value="모던">모던</option>
                         <option value="마블">마블</option>
                         <option value="코튼베이지">코튼베이지</option>
@@ -282,14 +310,14 @@ export default function ReportPage() {
                 ].map(field => (
                     <div key={field.name}>
                         <label className="block text-sm font-semibold text-gray-700 mb-1">{field.label}</label>
-                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" />
+                        <input type="text" name={field.name} value={(form as any)[field.name]} onChange={handleChange} className="w-full border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none transition-all" style={{ fontSize: '16px' }} />
                     </div>
                 ))}
             </div>
 
             <div className="flex gap-3 mt-8">
-                <button onClick={handleCopy} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl hover:bg-gray-700 transition-colors shadow-lg active:scale-95">결과 복사하기</button>
-                <button onClick={handleSend} className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg active:scale-95">엑셀 시트 전송</button>
+                <button onTouchStart={() => { }} onClick={handleCopy} className="flex-1 bg-gray-800 text-white font-bold py-4 rounded-xl hover:bg-gray-700 transition-colors shadow-lg active:scale-95" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>결과 복사하기</button>
+                <button onTouchStart={() => { }} onClick={handleSend} className="flex-1 bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg active:scale-95" style={{ WebkitTapHighlightColor: 'transparent', touchAction: 'manipulation' }}>엑셀 시트 전송</button>
             </div>
 
             <div className="mt-8 p-4 bg-gray-50 rounded-xl border-2 border-gray-100">
